@@ -18,6 +18,29 @@ services:
     networks:
       - app_internal
 
+  migrate:
+    build:
+      context: .
+      dockerfile: ./migrate/Dockerfile
+    environment:
+      DB_HOST: mariadb
+      DB_PORT: 3306
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_DATABASE: ${DB_DATABASE}
+    # execute after the dockerfile has been parsed so the env variables are present
+    command: >
+      sh -c "
+        npm run db:generate &&
+        npm run db:migrate &&
+        npm run db:init
+      "
+    networks:
+      - app_internal
+    depends_on:
+      mariadb:
+        condition: service_healthy
+
   app:
     restart: unless-stopped
     build:
@@ -27,7 +50,7 @@ services:
       mariadb:
         condition: service_healthy
     environment:
-      PROD: true
+      PROD: production
       DB_HOST: mariadb
       DB_PORT: 3306
       DB_USER: ${DB_USER}

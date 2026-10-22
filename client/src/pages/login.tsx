@@ -64,6 +64,8 @@ export default function Login() {
                     Sign in to your account
                 </p>
 
+                <a href="/api/auth/login" hidden>Login with Microsoft</a>
+
                 <form onSubmit={(e) => handleSubmit(e)}>
                     <label
                         htmlFor="email"

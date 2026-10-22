@@ -17,5 +17,9 @@
   "devDependencies": {
     "concurrently": "^10.0.5",
     "typescript": "^7.0.2"
+  },
+  "dependencies": {
+    "cookie-parser": "^1.4.7",
+    "react-router-dom": "^7.18.4"
   }
 }

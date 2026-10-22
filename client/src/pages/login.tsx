@@ -1,12 +1,37 @@
+import { GetBackendStr } from "../utilities/browser_utils";
+
 export default function Login() {
-    const handleSubmit = (e: React.SubmitEvent<HTMLFormElement>) => {
-        e.preventDefault();
+    const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
+        try {
+            e.preventDefault();
 
-        const form = new FormData(e.currentTarget);
-        const email = form.get("email");
-        const password = form.get("password");
-
-        console.log("Login:", { email, password });
+            const form = new FormData(e.currentTarget);
+            const email = form.get("email");
+            const password = form.get("password");
+    
+            const endpoint = GetBackendStr("/login");
+            const response = await fetch(endpoint, {
+                method: "POST",
+                credentials: "include",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    "email": email,
+                    "password": password,
+                }),
+            });
+    
+            const result = await response.json();
+    
+            if (result.success) {
+                console.log("[+] Login Successful")
+            } else {
+                console.error("[-] Login Failed: Incorrect email or password!")
+            }
+        } catch (e) {
+            console.error("[-] Login Failed:", e);
+        }
     };
 
     return (

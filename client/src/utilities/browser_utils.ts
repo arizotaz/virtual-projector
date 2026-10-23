@@ -1,3 +1,12 @@
+export type UserData = {
+    id: string,
+    firstName: string,
+    middleInitial: string | null,
+    lastName: string | null,
+    email: string,
+    role: string,
+};
+
 /**
  * If back end host is defined in local .env it returns that,
  * otherwise returns /api with assumption of being ran in context

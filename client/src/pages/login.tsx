@@ -1,6 +1,12 @@
+import { useState } from 'react';
+
 import { GetBackendStr } from "../utilities/browser_utils";
+import Feedback from '../components/feedback';
 
 export default function Login() {
+    const [success, SetSuccess] = useState(false);
+    const [msg, SetMsg] = useState<string|undefined|null>("");
+
     const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
         try {
             e.preventDefault();
@@ -23,6 +29,16 @@ export default function Login() {
             });
     
             const result = await response.json();
+
+            SetSuccess(result.success);
+            SetMsg(result.message);
+    
+            // clear feedback after some time
+            setTimeout(() => {
+                SetMsg(null);
+                if (result.success)
+                    window.location.href = "/";
+            }, result.success ? 1000 : 3000);
     
             if (result.success) {
                 console.log("[+] Login Successful")
@@ -59,6 +75,8 @@ export default function Login() {
                 <h1 style={{ marginTop: 0, marginBottom: 8 }}>
                     Virtual Projector
                 </h1>
+
+                <Feedback success={success} message={msg} />
 
                 <p style={{ color: "#666", marginBottom: 24 }}>
                     Sign in to your account

@@ -7,13 +7,15 @@ import cookieParser from "cookie-parser";
 import { Server } from "socket.io";
 import type { ClientToServerEvents, ServerToClientEvents } from "@virtual-projector/shared";
 
+import { GetInfo, Login, SESSION_TTL_MS } from "./utils";
+
 const PORT = Number(process.env.PORT ?? 3000);
 
 const app = express();
 
 app.use(express.urlencoded({ extended: true })); // handle url-encoding
 app.use(express.json()); // handle JSON
-app.use(cookieParser(process.env.COOKIE_SECRET)); // handle special cookies
+app.use(cookieParser()); // handle cookies
 
 // utilize the msal SSO logic in auth.ts
 // import { auth, requireAuth } from "./auth.js";
@@ -29,10 +31,26 @@ app.get("/health", (_req, res) => {
     res.json({ ok: true });
 });
 
+app.get("/me", async (req, res) => {
+    const userData = await GetInfo(req.cookies.sid ?? "");
+    return res.json({
+        user: userData
+    })
+});
+
 app.post("/login", async (req, res) => {
     try {
         const { email, password } = req.body;
-        return res.json(data);
+        const { token, ret } = await Login(email, password, req.ip);
+        if (ret.success) {
+            res.cookie("sid", token, {
+                httpOnly: true,   // not readable from JS
+                secure: false,    // HTTPS only
+                sameSite: "lax",
+                maxAge: SESSION_TTL_MS,
+            });
+        }
+        res.json(ret);
     } catch (e) {
         console.error(`[LOGIN ${new Date().toDateString()}]`, e);
         return res.status(500).send("Server Error");

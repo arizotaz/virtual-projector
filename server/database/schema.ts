@@ -1,6 +1,8 @@
 import {
-    customType, foreignKey, int, mysqlTable, primaryKey, timestamp, varchar,
+    customType, foreignKey, int, mysqlTable,
+    primaryKey, timestamp, varchar,
 } from 'drizzle-orm/mysql-core';
+import { sql } from 'drizzle-orm';
 
 // MariaDB native UUID column (drizzle has no built-in `uuid` for mysql-core)
 const uuid = customType<{ data: string }>({
@@ -8,11 +10,12 @@ const uuid = customType<{ data: string }>({
 });
 
 export const users = mysqlTable('users', {
-    id: uuid('id').primaryKey(),
+    id: uuid('id').primaryKey().default(sql`(uuid())`), // mariadb handles generation for us
     firstName: varchar('first_name', { length: 100 }).notNull(),
     middleInitial: varchar('middle_initial', { length: 100 }),
     lastName: varchar('last_name', { length: 100 }),
     email: varchar('email', { length: 100 }).notNull(),
+    password_hash: varchar('password_hash', { length: 64 }).notNull(), // sha-256 (temp)
 });
 
 export const accounts = mysqlTable('accounts', {

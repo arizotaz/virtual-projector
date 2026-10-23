@@ -28,6 +28,9 @@ services:
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
       DB_DATABASE: ${DB_DATABASE}
+      ADMIN_USER: ${ADMIN_USER}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
     # execute after the dockerfile has been parsed so the env variables are present
     command: >
       sh -c "
@@ -57,6 +60,7 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       DB_DATABASE: ${DB_DATABASE}
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
+      COOKIE_SECRET: ${COOKIE_SECRET}
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost/api/health"]
       interval: 10s

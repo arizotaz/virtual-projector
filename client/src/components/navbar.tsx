@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { GetBackendStr, UserData } from "../utilities/browser_utils";
 
 const ROLE_BADGE: Record<string, string> = {
@@ -6,27 +6,39 @@ const ROLE_BADGE: Record<string, string> = {
     Teacher: "text-bg-warning",
     Student: "text-bg-info",
 };
+const ROLE_HOME: Record<string, string> = {
+    student: "/student",
+    teacher: "/teacher",
+    administrator: "/admin",
+    super: "/admin",
+};
 
-export default function Navbar() {
+export default function Navbar({ user }: { user: UserData | undefined | null }) {
     // if user can be resolved => valid sid cookie and session can find them in DB
-    const [user, setUser] = useState<UserData | undefined | null>(null);
+
+    async function handleLogout() {
+        const endpoint = GetBackendStr("/logout");
+        await fetch(endpoint, {
+            credentials: "include",
+        });
+        window.location.reload();
+    }
 
     useEffect(() => {
-        let cancelled = false;
+        if (user === null) return; // still loading, don't redirect yet
+        if (user === undefined) return; // still loading, don't redirect yet
 
-        async function GetUserInfo() {
-            try {
-                const response = await fetch(GetBackendStr("/me"), { credentials: "include" });
-                const data = response.ok ? await response.json() : null;
-                if (!cancelled) setUser(data?.user ?? undefined);
-            } catch {
-                if (!cancelled) setUser(undefined);
-            }
-        }
+        const path = window.location.pathname;
 
-        GetUserInfo();
-        return () => { cancelled = true; };
-    }, []);
+        // redirect authenticated users to their respective panel, otherwise redirect to login
+        const target = user ? ROLE_HOME[user.role?.toLowerCase() ?? ""] : "/login";
+        if (!target) return;
+
+        // infinite redirection-loop prevention
+        if (path === target || path.startsWith(target + "/")) return;
+
+        window.location.replace(target);
+    }, [user]);
 
     return (
         <nav className="navbar navbar-expand sticky-top bg-dark shadow-sm py-2" data-bs-theme="dark">
@@ -81,6 +93,16 @@ export default function Navbar() {
                                 {user.role}
                             </span>
                         )}
+
+                        <div className="position-relative">
+                            <button
+                                type="button"
+                                className="btn btn-outline-light btn-sm"
+                                onClick={handleLogout}
+                            >
+                                Logout
+                            </button>
+                        </div>
                     </div>
                 )}
             </div>

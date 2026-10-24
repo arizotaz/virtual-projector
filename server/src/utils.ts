@@ -21,7 +21,7 @@ const dbhost = process.env.DB_HOST;
 
 const url = `mysql://${encodeURIComponent(dbu)}:${encodeURIComponent(passwd)}@${dbhost}:3306/${dbname}`;
 const pool = mysql.createPool(url);
-const db = drizzle({ client: pool });
+export const db = drizzle({ client: pool });
 
 export const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
@@ -36,11 +36,12 @@ function str2sha256(value: string) {
 const cookie_sec = process.env.COOKIE_SECRET;
 if (!cookie_sec) throw new Error("COOKIE_SEC is not set");
 
-const roles: Record<number, string> = {
+export const roles: Record<number, string> = {
     0: "Unknown",
     1: "Student",
     2: "Teacher",
     3: "Administrator",
+    4: "Super",
 };
 
 // Derive a key for AES methods below
@@ -147,6 +148,19 @@ export async function GetInfo(sid: string) {
     }
 }
 
+export async function Logout(sid: string) {
+    try {
+        const sessid = decrypt(sid);
+        if (!sessid) return;
+
+        // remove session from DB
+        await db.delete(schema.sessions)
+            .where(eq(schema.sessions.sessionID, sessid));
+    } catch (e) {
+        console.error("[Logout Err]", e);
+    }
+}
+
 export async function Login(email: string, password: string, ipAddress?: string) {
     try {
         const rows = await db.select({ id: schema.users.id }).from(schema.users).where(
@@ -191,5 +205,55 @@ export async function Login(email: string, password: string, ipAddress?: string)
                 "message": "Server Error"
             }
         }
+    }
+}
+
+export async function CreateUser(
+    firstName: string,
+    middleInitial: string,
+    lastName: string,
+    email: string,
+    password: string,
+    role: number
+) {
+    try {
+        /**
+            0: "Unknown",
+            1: "Student",
+            2: "Teacher",
+            3: "Administrator",
+            4: "Super",
+        **/
+
+        if (role < 2 || role > 3) {
+            console.error("[-] Invalid Creation Role:", role);
+            return;
+        }
+
+        const password_hash = createHash("sha256")
+            .update(password)
+            .digest("hex");
+
+        await db.insert(schema.users).ignore().values({
+            firstName: firstName,
+            middleInitial: middleInitial,
+            lastName: lastName,
+            email: email,
+            password_hash: password_hash,
+        });
+        
+        const [insertedUser] = await db.select({ uid: schema.users.id })
+            .from(schema.users).where(eq(
+                schema.users.email, email
+            )).limit(1);
+        await db.insert(schema.userRoles).ignore().values({
+            userid: insertedUser.uid,
+            roleid: role
+        });
+
+        return { "success": true, "message": `Created new ${roles[role]}!` }
+    } catch (e) {
+        console.error("[CREATE-USER Err]", e);
+        return { "success": false, "message": `Failed to Create ${roles[role]}` }
     }
 }

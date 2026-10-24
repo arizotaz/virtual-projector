@@ -14,7 +14,7 @@ export const users = mysqlTable('users', {
     firstName: varchar('first_name', { length: 100 }).notNull(),
     middleInitial: varchar('middle_initial', { length: 100 }),
     lastName: varchar('last_name', { length: 100 }),
-    email: varchar('email', { length: 100 }).notNull(),
+    email: varchar('email', { length: 100 }).notNull().unique(),
     password_hash: varchar('password_hash', { length: 64 }).notNull(), // sha-256 (temp)
 });
 

@@ -7,7 +7,7 @@ import cookieParser from "cookie-parser";
 import { Server } from "socket.io";
 import type { ClientToServerEvents, ServerToClientEvents } from "@virtual-projector/shared";
 
-import { GetInfo, Login, SESSION_TTL_MS } from "./utils";
+import { GetInfo, Login, Logout, SESSION_TTL_MS } from "./utils";
 
 const PORT = Number(process.env.PORT ?? 3000);
 
@@ -24,6 +24,9 @@ app.use(cookieParser()); // handle cookies
 //     res.json(res.locals.user);
 // });
 
+import adminRoutes from "./routers/admin_routes";
+app.use("/admin", adminRoutes);
+
 const httpServer = createServer(app);
 const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer);
 
@@ -36,6 +39,17 @@ app.get("/me", async (req, res) => {
     return res.json({
         user: userData
     })
+});
+
+app.get("/logout", async (req, res) => {
+    try {
+        await Logout(req.cookies.sid ?? "");
+        res.clearCookie("sid");
+        res.send("You've been logged out!")
+    } catch (e) {
+        console.error(`[LOGOUT ${new Date().toDateString()}]`, e);
+        return res.status(500).send("Server Error");
+    }
 });
 
 app.post("/login", async (req, res) => {

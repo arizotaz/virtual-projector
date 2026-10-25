@@ -182,13 +182,6 @@ export async function GetStudents(crn: string, section: string, sid: string) {
                 )
             );
 
-        /** @todo REMOVE THIS STMT */
-        console.log({
-            "crn": crn,
-            "section": section,
-            "students": students
-        })
-
         return {
             "success": true,
             "students": students

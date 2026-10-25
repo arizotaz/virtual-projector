@@ -4,9 +4,8 @@ import { GetBackendStr } from "../utilities/browser_utils";
 import Feedback from '../components/feedback';
 
 export type Class = {
-    classId: string;
-    name: string;
     crn: string;
+    name: string;
     section: string;
 }
 
@@ -42,7 +41,7 @@ export default function ClassView({
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
-                    "classId": classItem.classId,
+                    "crn": classItem.crn,
                     "section": classItem.section,
                 }),
             });
@@ -95,7 +94,7 @@ export default function ClassView({
             const form = new FormData(event.currentTarget);
             const data = {
                 email: form.get("email"),
-                classId: form.get("classId"),
+                crn: form.get("crn"),
                 section: form.get("section"),
             };
 
@@ -111,14 +110,14 @@ export default function ClassView({
         }
     }
 
-    async function removeStudent(email: string, classId: string, section: string) {
+    async function removeStudent(email: string, crn: string, section: string) {
         try {
             if (!window.confirm(`Are you sure you want to REMOVE ${email}`))
                 return;
 
             const data = {
                 email: email,
-                classId: classId,
+                crn: crn,
                 section: section,
             };
     
@@ -199,8 +198,8 @@ export default function ClassView({
                                                 required
                                             />
                                             <input
-                                                name="classId"
-                                                value={classItem.classId}
+                                                name="crn"
+                                                value={classItem.crn}
                                                 hidden
                                             />
                                             <input
@@ -327,7 +326,7 @@ export default function ClassView({
                                                                                         onClick={() =>
                                                                                             removeStudent(
                                                                                                 student.email,
-                                                                                                classItem.classId,
+                                                                                                classItem.crn,
                                                                                                 classItem.section
                                                                                             )
                                                                                         }

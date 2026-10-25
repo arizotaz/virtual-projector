@@ -38,30 +38,29 @@ export const userRoles = mysqlTable('user_roles', {
 });
 
 export const classes = mysqlTable('classes', {
-    id: uuid('id').primaryKey().default(sql`(uuid())`),
-    crn: varchar('crn', { length: 32 }),
+    crn: varchar('crn', { length: 32 }).primaryKey(),
     name: varchar('name', { length: 512 }).notNull(),
 });
 
 export const sections = mysqlTable('sections', {
-    classId: uuid('class_id').notNull()
-        .references(() => classes.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+    crn: varchar('crn', { length: 32 }).notNull()
+        .references(() => classes.crn, { onDelete: 'cascade', onUpdate: 'cascade' }),
     sectionid: varchar('sectionid', { length: 5 }).notNull(),
     lecturer: uuid('lecturer').notNull().references(() => users.id),
 }, (t) => [
-    primaryKey({ columns: [t.classId, t.sectionid] }),
+    primaryKey({ columns: [t.crn, t.sectionid] }),
 ]);
 
 export const enrollments = mysqlTable('enrollments', {
     studentid: uuid('studentid').notNull(),
-    classId: uuid('class_id').notNull(),
+    crn: varchar('crn', { length: 32 }).notNull(),
     sectionid: varchar('sectionid', { length: 5 }).notNull(),
 }, (t) => [
-    primaryKey({ columns: [t.studentid, t.classId, t.sectionid] }),
+    primaryKey({ columns: [t.studentid, t.crn, t.sectionid] }),
     foreignKey({
         name: 'FK_enrollments_sections',
-        columns: [t.classId, t.sectionid],
-        foreignColumns: [sections.classId, sections.sectionid],
+        columns: [t.crn, t.sectionid],
+        foreignColumns: [sections.crn, sections.sectionid],
     })
         .onDelete('cascade')
         .onUpdate('cascade'),

@@ -1,6 +1,6 @@
 import { eq, asc, desc, max } from "drizzle-orm";
 import * as schema from '../database/schema';
-import { db, roles } from "./utils";
+import { db, getUserBySession, roles } from "./utils";
 
 const PAGE_SIZE = 10;
 export async function GetUsers(page: number) {
@@ -34,7 +34,7 @@ export async function GetUsers(page: number) {
     }
 }
 
-export async function DeleteUser(uid: string) {
+export async function DeleteUser(uid: string, sid: string) {
     try {
         const topRole = max(schema.userRoles.roleid);
         const [user] = await db.select({
@@ -49,7 +49,20 @@ export async function DeleteUser(uid: string) {
         if (!user) {
             return {
                 "success": false,
+                "message": "User does not Exist"
+            }
+        }
+
+        const selfUser = await getUserBySession(sid);
+        if (!selfUser) {
+            return {
+                "success": false,
                 "message": "Failed to Delete User"
+            }
+        } else if (user.id === selfUser.id) {
+            return {
+                "success": false,
+                "message": "Cannot Self-Delete"
             }
         }
 

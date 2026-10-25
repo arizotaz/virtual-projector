@@ -86,7 +86,7 @@ router.get("/get_users", async (req, res) => {
 router.post("/delete_user", async (req, res) => {
     try {
         const { uid } = req.body;
-        return res.json(await DeleteUser(uid));
+        return res.json(await DeleteUser(uid, req.cookies.sid ?? ""));
     } catch (e) {
         console.error("[DELETE-USER Err]", e)
         return res.status(500).send("Server Error");

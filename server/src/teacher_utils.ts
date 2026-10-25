@@ -1,20 +1,31 @@
 import { eq, and, max } from "drizzle-orm";
 import * as schema from '../database/schema';
-import { db, decrypt, getUserBySession } from "./utils";
+import { db, getUserBySession } from "./utils";
 
 /**
  * Returns if a teacher's session (sid) has ownership of a class
- * with the given classId
+ * with the given crn
  * 
- * @param classId 
+ * @param crn 
  * @param sid 
  * @returns 
  */
-async function CheckClassOwnership(classId: string, sid: string) {
+async function CheckClassOwnership(crn: string, sid: string, sectionid?: string) {
     try {
-        const sessid = decrypt(sid);
-        if (!sessid) return undefined;
-        return true;
+        const selfUser = await getUserBySession(sid);
+        if (!selfUser) return false;
+
+        const rows = await db.select({ crn: schema.sections.crn })
+            .from(schema.sections)
+            .where(and(
+                eq(schema.sections.crn, crn),
+                eq(schema.sections.lecturer, selfUser.id),
+                // optional: restrict to one specific section
+                ...(sectionid ? [eq(schema.sections.sectionid, sectionid)] : []),
+            ))
+            .limit(1);
+
+        return rows.length > 0;
     } catch (e) {
         console.error("[CHECK-CLASS-OWNERSHIP Err]", e);
         return false;
@@ -24,9 +35,9 @@ async function CheckClassOwnership(classId: string, sid: string) {
 // one row per user, using their highest-privilege role
 const topRole = max(schema.userRoles.roleid);
 
-export async function AddStudent(email: string, classId: string, section: string, sid: string) {
+export async function AddStudent(email: string, crn: string, section: string, sid: string) {
     try {
-        if (!CheckClassOwnership(classId, sid)) {
+        if (!CheckClassOwnership(crn, sid, section)) {
             return {
                 "success": false,
                 "message": "Modification Denied"
@@ -57,7 +68,7 @@ export async function AddStudent(email: string, classId: string, section: string
         // student exists, insert into specific class
         await db.insert(schema.enrollments).values({
             studentid: student.id,
-            classId: classId,
+            crn: crn,
             sectionid: section
         });
 
@@ -73,9 +84,9 @@ export async function AddStudent(email: string, classId: string, section: string
         }
     }
 }
-export async function RemoveStudent(email: string, classId: string, section: string, sid: string) {
+export async function RemoveStudent(email: string, crn: string, section: string, sid: string) {
     try {
-        if (!CheckClassOwnership(classId, sid)) {
+        if (!CheckClassOwnership(crn, sid, section)) {
             return {
                 "success": false,
                 "message": "Modification Denied"
@@ -106,7 +117,7 @@ export async function RemoveStudent(email: string, classId: string, section: str
         await db.delete(schema.enrollments).where(and(
             eq(schema.enrollments.studentid, student.id),
             eq(schema.enrollments.sectionid, section),
-            eq(schema.enrollments.classId, classId)
+            eq(schema.enrollments.crn, crn)
         ));
 
         return {
@@ -126,29 +137,29 @@ export async function GetClasses(sid: string) {
     try {
         const user = await getUserBySession(sid ?? "");
         if (!user) {
-            return {
-                "success": false,
-                "message": "Access Denied"
-            };
+            return [];
         }
 
-        return db.select({
-            classId: schema.classes.id,
-            className: schema.classes.name,
+        const classes = await db.select({
             crn: schema.classes.crn,
+            name: schema.classes.name,
             section: schema.sections.sectionid,
-        }).from(schema.classes)
-            .leftJoin(schema.sections, eq(schema.sections.classId, schema.classes.id))
-            .groupBy(schema.classes.id);
+        })
+            .from(schema.sections)
+            .innerJoin(schema.classes, eq(schema.classes.crn, schema.sections.crn))
+            .where(eq(schema.sections.lecturer, user.id))
+            .orderBy(schema.classes.crn, schema.sections.sectionid);
+
+        return classes;
     } catch (e) {
         console.error("[GET-CLASSES Err]", e);
         return [];
     }
 }
 
-export async function GetStudents(classId: string, section: string, sid: string) {
+export async function GetStudents(crn: string, section: string, sid: string) {
     try {
-        if (!CheckClassOwnership(classId, sid)) {
+        if (!CheckClassOwnership(crn, sid, section)) {
             return {
                 "success": false,
                 "students": []
@@ -166,14 +177,14 @@ export async function GetStudents(classId: string, section: string, sid: string)
             .groupBy(schema.users.id)
             .where(
                 and(
-                    eq(schema.enrollments.classId, classId),
+                    eq(schema.enrollments.crn, crn),
                     eq(schema.enrollments.sectionid, section)
                 )
             );
 
         /** @todo REMOVE THIS STMT */
         console.log({
-            "classId": classId,
+            "crn": crn,
             "section": section,
             "students": students
         })
@@ -194,6 +205,7 @@ export async function GetStudents(classId: string, section: string, sid: string)
 
 export async function AddClass(name: string, crn: string, section: string, sid: string) {
     try {
+        // crn may already exist and we are simply adding a new section
         await db.insert(schema.classes).ignore().values({
             crn: crn,
             name: name,
@@ -206,7 +218,10 @@ export async function AddClass(name: string, crn: string, section: string, sid: 
             )
         ).limit(1);
 
-        await AddSection(newClass.id, section, sid);
+        const sectionRes = await AddSection(newClass.crn, section, sid);
+        if (!sectionRes.success) {
+            return sectionRes;
+        }
 
         return {
             "success": true,
@@ -220,9 +235,9 @@ export async function AddClass(name: string, crn: string, section: string, sid: 
         }
     }
 }
-export async function RemoveClass(classId: string, sid: string) {
+export async function RemoveClass(crn: string, sid: string) {
     try {
-        if (!CheckClassOwnership(classId, sid)) {
+        if (!CheckClassOwnership(crn, sid)) {
             return {
                 "success": false,
                 "message": "Modification Denied"
@@ -230,7 +245,7 @@ export async function RemoveClass(classId: string, sid: string) {
         }
 
         await db.delete(schema.classes).where(
-            eq(schema.classes.id, classId)
+            eq(schema.classes.crn, crn)
         );
 
         return {
@@ -247,9 +262,9 @@ export async function RemoveClass(classId: string, sid: string) {
 }
 
 
-export async function AddSection(classId: string, section: string, sid: string) {
+export async function AddSection(crn: string, section: string, sid: string) {
     try {
-        if (!CheckClassOwnership(classId, sid)) {
+        if (!CheckClassOwnership(crn, sid, section)) {
             return {
                 "success": false,
                 "message": "Modification Denied"
@@ -264,18 +279,27 @@ export async function AddSection(classId: string, section: string, sid: string) 
             };
         }
 
-        await db.insert(schema.sections).ignore().values({
-            classId: classId,
+        await db.insert(schema.sections).values({
+            crn: crn,
             sectionid: section,
             lecturer: user.id,
         });
+
+        return {
+            "success": true,
+            "message": "Section Added"
+        };
     } catch (e) {
         console.error("[ADD-SECTION Err]", e);
+        return {
+            "success": false,
+            "message": "Failed to Add Section"
+        };
     }
 }
-export async function RemoveSection(classId: string, section:string, sid: string) {
+export async function RemoveSection(crn: string, section:string, sid: string) {
     try {
-        if (!CheckClassOwnership(classId, sid)) {
+        if (!CheckClassOwnership(crn, sid, section)) {
             return {
                 "success": false,
                 "message": "Modification Denied"
@@ -284,7 +308,7 @@ export async function RemoveSection(classId: string, section:string, sid: string
 
         await db.delete(schema.sections).where(
             and(
-                eq(schema.sections.classId, classId),
+                eq(schema.sections.crn, crn),
                 eq(schema.sections.sectionid, section)
             )
         );

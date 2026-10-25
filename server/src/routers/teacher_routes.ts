@@ -33,8 +33,8 @@ router.use(requireTeacher);
 
 router.post("/add_student", async (req, res) => {
     try {
-        const { email, classId, section } = req.body;
-        return res.json(await AddStudent(email, classId, section, req.cookies.sid ?? ""));
+        const { email, crn, section } = req.body;
+        return res.json(await AddStudent(email, crn, section, req.cookies.sid ?? ""));
     } catch (e) {
         console.error("[ADD-STUDENT Err]", e)
         return res.status(500).send("Server Error");
@@ -42,8 +42,8 @@ router.post("/add_student", async (req, res) => {
 });
 router.post("/remove_student", async (req, res) => {
     try {
-        const { email, classId, section } = req.body;
-        return res.json(await RemoveStudent(email, classId, section, req.cookies.sid ?? ""));
+        const { email, crn, section } = req.body;
+        return res.json(await RemoveStudent(email, crn, section, req.cookies.sid ?? ""));
     } catch (e) {
         console.error("[REMOVE-STUDENT Err]", e)
         return res.status(500).send("Server Error");
@@ -63,8 +63,8 @@ router.get("/get_classes", async (req, res) => {
 });
 router.post("/get_students", async (req, res) => {
     try {
-        const { classId, section } = req.body;
-        return res.json(await GetStudents(classId, section, req.cookies.sid ?? ""));
+        const { crn, section } = req.body;
+        return res.json(await GetStudents(crn, section, req.cookies.sid ?? ""));
     } catch (e) {
         console.error("[GET-STUDENTS Err]", e)
         return res.status(500).send("Server Error");
@@ -82,8 +82,8 @@ router.post("/add_class", async (req, res) => {
 });
 router.post("/remove_class", async (req, res) => {
     try {
-        const { classId } = req.body;
-        return res.json(await RemoveClass(classId, req.cookies.sid ?? ""));
+        const { crn } = req.body;
+        return res.json(await RemoveClass(crn, req.cookies.sid ?? ""));
     } catch (e) {
         console.error("[REMOVE-CLASS Err]", e)
         return res.status(500).send("Server Error");
@@ -92,8 +92,8 @@ router.post("/remove_class", async (req, res) => {
 
 router.post("/add_section", async (req, res) => {
     try {
-        const { classId, section } = req.body;
-        return res.json(await AddSection(classId, section, req.cookies.sid ?? ""));
+        const { crn, section } = req.body;
+        return res.json(await AddSection(crn, section, req.cookies.sid ?? ""));
     } catch (e) {
         console.error("[ADD-SECTION Err]", e)
         return res.status(500).send("Server Error");
@@ -101,8 +101,8 @@ router.post("/add_section", async (req, res) => {
 });
 router.post("/remove_section", async (req, res) => {
     try {
-        const { classId, section } = req.body;
-        return res.json(await RemoveSection(classId, section, req.cookies.sid ?? ""));
+        const { crn, section } = req.body;
+        return res.json(await RemoveSection(crn, section, req.cookies.sid ?? ""));
     } catch (e) {
         console.error("[REMOVE-SECTION Err]", e)
         return res.status(500).send("Server Error");

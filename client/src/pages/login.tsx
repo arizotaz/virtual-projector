@@ -36,6 +36,7 @@ export default function Login() {
             // clear feedback after some time
             setTimeout(() => {
                 SetMsg(null);
+                window.location.reload();
             }, result.success ? 1000 : 3000);
     
             if (result.success) {

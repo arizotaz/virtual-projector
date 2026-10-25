@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import ClassView, { Class } from "../components/ClassView";
 
 import "../teacher.css";
@@ -15,31 +15,25 @@ export default function Teacher({ user }: { user: UserData | undefined | null })
     const [classes, setClasses] = useState<Class[]>([]);
     const [selectedClass, setSelectedClass] = useState<Class | null>(null);
 
+    const GetMyClasses = useCallback(async () => {
+        try {
+            const response = await fetch(GetBackendStr("/teacher/get_classes"), { credentials: "include" });
+            const data = response.ok ? await response.json() : null;
+            setClasses(data?.classes ?? []);
+        } catch {
+            setClasses([]);
+        }
+    }, []);
+
     useEffect(() => {
         if (access === "unauthenticated") window.location.replace("/login");
         else if (access === "forbidden") window.location.replace("/");
     }, [access]);
 
     useEffect(() => {
-        if (access !== "ok") return;
-        let cancelled = false;
+        if (access === "ok") GetMyClasses();
+    }, [access, GetMyClasses]);
 
-        async function GetMyClasses() {
-            try {
-                const response = await fetch(GetBackendStr("/teacher/get_classes"), { credentials: "include" });
-                const data = response.ok ? await response.json() : null;
-                
-                // console.log(data?.classes ?? []);
-
-                if (!cancelled) setClasses(data?.classes ?? []);
-            } catch {
-                if (!cancelled) setClasses([]);
-            }
-        }
-
-        GetMyClasses();
-        return () => { cancelled = true; };
-    }, [access]);
     if (access !== "ok") return null;
 
     if (selectedClass) {
@@ -61,7 +55,7 @@ export default function Teacher({ user }: { user: UserData | undefined | null })
                 crn: form.get("crn"),
                 section: form.get("section"),
             };
-    
+
             const endpoint = GetBackendStr("/teacher/add_class");
             const response = await fetch(endpoint, {
                 method: "POST",
@@ -71,29 +65,94 @@ export default function Teacher({ user }: { user: UserData | undefined | null })
                 },
                 body: JSON.stringify(data),
             });
-    
+
             const result = await response.json();
 
             SetSuccess(result.success);
             SetMsg(result.message);
-    
-            // clear feedback after some time
-            setTimeout(() => {
-                SetMsg(null);
-                
-                /*
-                if (result.success)
-                    window.location.href = "/";
-                */
-            }, result.success ? 1000 : 3000);
-    
+
             if (result.success) {
-                console.log(`[+] Added Class Successful`)
+                console.log("[+] Added Class Successful");
+                GetMyClasses();
             } else {
-                console.error(`[-] Failed to Add Class!`)
+                console.error("[-] Failed to Add Class!");
             }
+
+            // clear feedback after some time
+            setTimeout(() => SetMsg(null), result.success ? 1000 : 3000);
         } catch (e) {
-            console.error(`[-] Failed to Add Class:`, e);
+            console.error("[-] Failed to Add Class:", e);
+        }
+    }
+
+    async function deleteClass(classItem: Class) {
+        if (!window.confirm(`Are you sure you want to DELETE ALL sections for "${classItem.name}"?`)) {
+            return;
+        }
+
+        try {
+            const response = await fetch(
+                GetBackendStr("/teacher/remove_class"),
+                {
+                    method: "POST",
+                    credentials: "include",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        crn: classItem.crn,
+                    }),
+                }
+            );
+
+            const result = await response.json();
+
+            SetSuccess(result.success);
+            SetMsg(result.message);
+
+            if (result.success) GetMyClasses();
+
+            setTimeout(() => SetMsg(null), result.success ? 1000 : 3000);
+        } catch (e) {
+            console.error("[-] Failed to Delete Class:", e);
+            SetSuccess(false);
+            SetMsg("Failed to Delete Class.");
+        }
+    }
+
+    async function deleteSection(classItem: Class) {
+        if (!window.confirm(`Are you sure you want to DELETE "${classItem.name} : Section ${classItem.section}"?`)) {
+            return;
+        }
+
+        try {
+            const response = await fetch(
+                GetBackendStr("/teacher/remove_section"),
+                {
+                    method: "POST",
+                    credentials: "include",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        crn: classItem.crn,
+                        section: classItem.section,
+                    }),
+                }
+            );
+
+            const result = await response.json();
+
+            SetSuccess(result.success);
+            SetMsg(result.message);
+
+            if (result.success) GetMyClasses();
+
+            setTimeout(() => SetMsg(null), result.success ? 1000 : 3000);
+        } catch (e) {
+            console.error("[-] Failed to Delete Section:", e);
+            SetSuccess(false);
+            SetMsg("Failed to Delete Section.");
         }
     }
 
@@ -121,13 +180,9 @@ export default function Teacher({ user }: { user: UserData | undefined | null })
                         <div className="card-body">
                             <form onSubmit={createClass}>
                                 <div className="mb-3">
-                                    <label
-                                        htmlFor="class-name"
-                                        className="form-label"
-                                    >
+                                    <label htmlFor="class-name" className="form-label">
                                         Class Name
                                     </label>
-
                                     <input
                                         id="class-name"
                                         name="className"
@@ -138,13 +193,9 @@ export default function Teacher({ user }: { user: UserData | undefined | null })
                                 </div>
 
                                 <div className="mb-3">
-                                    <label
-                                        htmlFor="class-crn"
-                                        className="form-label"
-                                    >
+                                    <label htmlFor="class-crn" className="form-label">
                                         CRN
                                     </label>
-
                                     <input
                                         id="class-crn"
                                         name="crn"
@@ -155,13 +206,9 @@ export default function Teacher({ user }: { user: UserData | undefined | null })
                                 </div>
 
                                 <div className="mb-3">
-                                    <label
-                                        htmlFor="class-section"
-                                        className="form-label"
-                                    >
+                                    <label htmlFor="class-section" className="form-label">
                                         Section
                                     </label>
-
                                     <input
                                         id="class-section"
                                         name="section"
@@ -171,10 +218,7 @@ export default function Teacher({ user }: { user: UserData | undefined | null })
                                     />
                                 </div>
 
-                                <button
-                                    type="submit"
-                                    className="btn btn-primary w-100"
-                                >
+                                <button type="submit" className="btn btn-primary w-100">
                                     Create Class
                                 </button>
                             </form>
@@ -193,15 +237,20 @@ export default function Teacher({ user }: { user: UserData | undefined | null })
                     ) : (
                         <div className="row g-3">
                             {classes.map((classItem) => (
-                                /* CLASS CARD / BUTTON */
                                 <div
-                                    key={classItem.classId}
+                                    key={`${classItem.crn}-${classItem.section}`}
                                     className="col-12 col-md-6"
                                 >
-                                    <button
-                                        type="button"
+                                    {/* CLASS CARD */}
+                                    <div
+                                        role="button"
+                                        tabIndex={0}
                                         className="card class-card shadow-sm w-100 text-start border"
                                         onClick={() => setSelectedClass(classItem)}
+                                        onKeyDown={(e) => {
+                                            if (e.target === e.currentTarget && e.key === "Enter")
+                                                setSelectedClass(classItem);
+                                        }}
                                     >
                                         <div className="card-body position-relative">
                                             <h5 className="card-title mb-2">
@@ -210,27 +259,42 @@ export default function Teacher({ user }: { user: UserData | undefined | null })
 
                                             <div className="text-muted">
                                                 <div>
-                                                    <strong>CRN:</strong>{" "}
-                                                    {classItem.crn}
+                                                    <strong>CRN:</strong> {classItem.crn}
                                                 </div>
-
                                                 <div>
-                                                    <strong>Section:</strong>{" "}
-                                                    {classItem.section}
+                                                    <strong>Section:</strong> {classItem.section}
                                                 </div>
                                             </div>
 
-                                            <span className="class-card-arrow">
-                                                →
-                                            </span>
+                                            <span className="class-card-arrow">→</span>
                                         </div>
 
-                                        <div className="card-footer bg-transparent">
-                                            <span className="text-primary">
-                                                Manage class
-                                            </span>
+                                        <div className="card-footer bg-transparent d-flex justify-content-between align-items-center">
+                                            <span className="text-primary">Manage class</span>
+
+                                            <button
+                                                type="button"
+                                                className="btn btn-sm btn-outline-danger"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    deleteSection(classItem);
+                                                }}
+                                            >
+                                                Delete Section
+                                            </button>
+
+                                            <button
+                                                type="button"
+                                                className="btn btn-sm btn-outline-danger"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    deleteClass(classItem);
+                                                }}
+                                            >
+                                                Delete Class
+                                            </button>
                                         </div>
-                                    </button>
+                                    </div>
                                 </div>
                             ))}
                         </div>

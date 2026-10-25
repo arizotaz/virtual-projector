@@ -42,46 +42,50 @@ export default function Navbar({ user }: { user: UserData | undefined | null }) 
 
     return (
         <nav className="navbar navbar-expand sticky-top bg-dark shadow-sm py-2" data-bs-theme="dark">
-            <div className="container-fluid px-4">
-                <a href="/" className="navbar-brand d-flex align-items-center gap-2 fw-semibold">
-                    <span
-                        className="rounded-2 bg-primary d-inline-flex align-items-center justify-content-center fs-6 fw-bold"
-                        style={{ width: 32, height: 32 }}
-                    >
-                        VP
-                    </span>
+            <div className="container-fluid px-4 d-flex align-items-center">
+                <a
+                    href="/"
+                    className="navbar-brand d-flex align-items-center gap-2 fw-bold fs-5 mb-0 me-auto"
+                    style={{ letterSpacing: "0.02em" }}
+                >
                     Virtual Projector
                 </a>
 
-                <ul className="navbar-nav ms-3 me-auto">
-                    <li className="nav-item">
-                        <a href="/" className="nav-link">Home</a>
-                    </li>
-                </ul>
-
                 {/* loading placeholder, avoids a Login-button flash for logged-in users */}
                 {user === null && (
-                    <div className="placeholder-glow d-flex align-items-center gap-2">
-                        <span className="placeholder rounded-circle" style={{ width: 40, height: 40 }} />
-                        <span className="placeholder col-12 rounded" style={{ width: 110, height: 32 }} />
+                    <div className="placeholder-glow d-flex align-items-center gap-3 ms-auto">
+                        <span className="placeholder rounded-circle" style={{ width: 38, height: 38 }} />
+                        <span className="placeholder rounded-pill" style={{ width: 110, height: 28 }} />
                     </div>
                 )}
 
                 {user === undefined && (
-                    <a href="/login" className="btn btn-primary btn-sm px-3">Login</a>
+                    <a href="/login" className="btn btn-light btn-sm rounded-pill px-4 fw-semibold ms-auto">
+                        Login
+                    </a>
                 )}
 
                 {user && (
-                    <div className="d-flex align-items-center gap-3">
+                    <div className="d-flex align-items-center gap-3 ms-auto">
                         <div className="text-end lh-sm d-none d-md-block">
-                            <div className="fw-semibold">{user.firstName}</div>
-                            <div className="small text-secondary">{user.email}</div>
+                            <div className="fw-semibold text-white">{user.firstName}</div>
+                            <div
+                                className="small text-white-50 text-truncate"
+                                style={{ maxWidth: 220 }}
+                            >
+                                {user.email}
+                            </div>
                         </div>
 
                         <div className="position-relative">
                             <div
-                                className="rounded-circle bg-primary text-white fw-semibold d-flex align-items-center justify-content-center"
-                                style={{ width: 40, height: 40 }}
+                                className="rounded-circle text-white fw-semibold d-flex align-items-center justify-content-center flex-shrink-0 user-select-none"
+                                style={{
+                                    width: 38,
+                                    height: 38,
+                                    background: "linear-gradient(135deg, #0d6efd, #6f42c1)",
+                                    boxShadow: "0 0 0 2px rgba(255, 255, 255, 0.25)",
+                                }}
                                 title={user.email}
                             >
                                 {user.firstName.charAt(0).toUpperCase()}
@@ -89,15 +93,18 @@ export default function Navbar({ user }: { user: UserData | undefined | null }) 
                         </div>
 
                         {user.role && (
-                            <span className={`badge rounded-pill ${ROLE_BADGE[user.role] ?? "text-bg-secondary"}`}>
+                            <span
+                                className={`badge rounded-pill text-capitalize px-3 py-2 ${ROLE_BADGE[user.role] ?? "text-bg-secondary"}`}
+                                style={{ letterSpacing: "0.03em" }}
+                            >
                                 {user.role}
                             </span>
                         )}
 
-                        <div className="position-relative">
+                        <div className="position-relative ps-3 border-start border-secondary-subtle border-opacity-25">
                             <button
                                 type="button"
-                                className="btn btn-outline-light btn-sm"
+                                className="btn btn-outline-light btn-sm rounded-pill px-3"
                                 onClick={handleLogout}
                             >
                                 Logout

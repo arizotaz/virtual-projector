@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { GetBackendStr, UserData } from "../utilities/browser_utils";
 import Feedback from '../components/feedback';
 
@@ -44,32 +44,33 @@ export default function UserList() {
     const [role, setRole] = useState<Role | "">("");
     const [page, setPage] = useState(1);
 
-    useEffect(() => {
-        let cancelled = false;
+    const requestId = useRef(0);
 
-        async function loadUsers() {
-            setLoading(true);
-            try {
-                const response = await fetch(
-                    GetBackendStr(`/admin/get_users?page=${page}`),
-                    { credentials: "include" }
-                );
-                const result = await response.json();
-                
-                console.log(result);
+    const loadUsers = useCallback(async () => {
+        const id = ++requestId.current;
+        setLoading(true);
+        try {
+            const response = await fetch(
+                GetBackendStr(`/admin/get_users?page=${page}`),
+                { credentials: "include" }
+            );
+            const result = await response.json();
 
-                if (!cancelled) setUsers(result.users ?? []);
-            } catch (e) {
-                console.error("[-] Error Fetching Users", e);
-                if (!cancelled) setUsers([]);
-            } finally {
-                if (!cancelled) setLoading(false);
-            }
+            console.log(result);
+
+            if (id === requestId.current) setUsers(result.users ?? []);
+        } catch (e) {
+            console.error("[-] Error Fetching Users", e);
+            if (id === requestId.current) setUsers([]);
+        } finally {
+            if (id === requestId.current) setLoading(false);
         }
-
-        loadUsers();
-        return () => { cancelled = true; };
     }, [page]);
+
+    useEffect(() => {
+        loadUsers();
+        return () => { requestId.current++; };
+    }, [loadUsers]);
 
     const searchValue = search.trim().toLowerCase();
     const visibleUsers = users.filter((user) => {
@@ -112,6 +113,7 @@ export default function UserList() {
             // clear feedback after some time
             setTimeout(() => {
                 SetMsg(null);
+                loadUsers();
             }, result.success ? 1000 : 3000);
     
             if (result.success) {

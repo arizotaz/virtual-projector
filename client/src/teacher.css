@@ -1,0 +1,38 @@
+.class-card {
+    cursor: pointer;
+    transition:
+        transform 150ms ease,
+        box-shadow 150ms ease,
+        border-color 150ms ease,
+        background-color 150ms ease;
+    position: relative;
+}
+
+.class-card:hover {
+    transform: translateY(-3px);
+    border-color: var(--bs-primary) !important;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.12) !important;
+    background-color: rgba(var(--bs-primary-rgb), 0.03);
+}
+
+.class-card:active {
+    transform: translateY(-1px);
+}
+
+.class-card-arrow {
+    position: absolute;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.5rem;
+    color: var(--bs-primary);
+    opacity: 0;
+    transition:
+        opacity 150ms ease,
+        right 150ms ease;
+}
+
+.class-card:hover .class-card-arrow {
+    right: 15px;
+    opacity: 1;
+}

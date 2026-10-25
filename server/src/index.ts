@@ -27,6 +27,9 @@ app.use(cookieParser()); // handle cookies
 import adminRoutes from "./routers/admin_routes";
 app.use("/admin", adminRoutes);
 
+import teacherRoutes from "./routers/teacher_routes";
+app.use("/teacher", teacherRoutes);
+
 const httpServer = createServer(app);
 const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer);
 

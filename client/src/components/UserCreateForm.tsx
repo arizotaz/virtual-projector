@@ -40,8 +40,6 @@ export default function UserCreateForm({ userType, uriTarget } : { userType: str
             // clear feedback after some time
             setTimeout(() => {
                 SetMsg(null);
-                if (result.success)
-                    window.location.href = "/";
             }, result.success ? 1000 : 3000);
     
             if (result.success) {

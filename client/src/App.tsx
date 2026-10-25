@@ -37,7 +37,7 @@ export default function App() {
                 <Route path="/" element={<Home />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/student" element={<StudentPanel />} />
-                <Route path="/teacher" element={<TeacherPanel />} />
+                <Route path="/teacher" element={<TeacherPanel user={user} />} />
                 <Route path="/admin" element={<AdminPanel user={user} />} />
             </Routes>
         </Router>

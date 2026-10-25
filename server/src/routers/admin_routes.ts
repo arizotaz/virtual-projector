@@ -75,7 +75,6 @@ router.get("/get_users", async (req, res) => {
         const result = {
             "users": await GetUsers(page)
         };
-        console.log(result);
 
         return res.json(result);
     } catch (e) {

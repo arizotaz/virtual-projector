@@ -22,3 +22,16 @@ export function GetBackendStr(dir: string) {
     const baseUrl = new URL(base, window.location.origin);
     return new URL(dir.replace(/^\/+/, ""), baseUrl).toString();
 }
+
+export type Access = "loading" | "unauthenticated" | "forbidden" | "ok";
+
+export function CheckAccess(
+    user: UserData | undefined | null,
+    allowedRoles: ReadonlySet<string>
+): Access {
+    if (user === null) return "loading";
+    if (!user) return "unauthenticated";
+
+    const role = user.role?.toLowerCase() ?? "";
+    return allowedRoles.has(role) ? "ok" : "forbidden";
+}

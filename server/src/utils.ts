@@ -54,7 +54,7 @@ function encrypt(sessionID: string): string {
     const ct = Buffer.concat([cipher.update(sessionID, "utf8"), cipher.final()]);
     return Buffer.concat([iv, cipher.getAuthTag(), ct]).toString("base64url");
 }
-function decrypt(token: string): string | null {
+export function decrypt(token: string): string | null {
     try {
         const buf = Buffer.from(token, "base64url");
         if (buf.length < 12 + 16 + 1) return null;
@@ -66,7 +66,7 @@ function decrypt(token: string): string | null {
     }
 }
 
-async function getUserBySession(sid: string) {
+export async function getUserBySession(sid: string) {
     try {
         if (!sid) return undefined;
         const sessid = decrypt(sid);

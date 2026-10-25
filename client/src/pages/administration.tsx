@@ -1,17 +1,22 @@
-import { Navigate } from "react-router-dom";
-import { UserData } from "../utilities/browser_utils";
+import { useEffect } from "react";
+
+import { CheckAccess, UserData } from "../utilities/browser_utils";
 
 import UserList from "../components/UserList";
 import UserCreateForm from "../components/UserCreateForm";
 
+const ADMIN_ROLES = new Set(["administrator", "super"]);
+
 export default function Admin({ user }: { user: UserData | undefined | null }) {
-    if (user === null) return null;                              // still loading
-    if (!user) return <Navigate to="/login" replace />;          // unauthenticated
-
-    const role = user.role?.toLowerCase();
-    if (role !== "administrator" && role !== "super")
-        return <Navigate to="/" replace />;                      // wrong role
-
+    // authorization check
+    const access = CheckAccess(user, ADMIN_ROLES);
+    useEffect(() => {
+        if (access === "unauthenticated") window.location.replace("/login");
+        else if (access === "forbidden") window.location.replace("/");
+    }, [access]);
+    if (access !== "ok") return null;
+    
+    const role = user?.role.toLowerCase() ?? "";
     return (
         <main className="container-fluid py-4">
             <div className="d-flex justify-content-between align-items-center mb-4">

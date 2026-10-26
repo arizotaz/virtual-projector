@@ -4,15 +4,18 @@ import Navbar from './components/navbar'
 
 import Home from './pages/home';
 import Login from './pages/login';
+import { WebRTCClientPage, WebRTCDebugPage, WebRTCHostPage } from './pages/webrtc';
 
 export default function App() {
   return (
     <>
-        <Navbar />
         <Router>
             <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/login" element={<Login />} />
+                <Route path="/webrtc/client" element={<WebRTCClientPage />} />
+                <Route path="/webrtc/host" element={<WebRTCHostPage />} />
+                <Route path="/webrtc/debug" element={<WebRTCDebugPage />} />
             </Routes>
         </Router>
     </>

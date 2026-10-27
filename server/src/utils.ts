@@ -225,7 +225,7 @@ export async function CreateUser(
             4: "Super",
         **/
 
-        if (role < 2 || role > 3) {
+        if (role < 1 || role > 3) {
             console.error("[-] Invalid Creation Role:", role);
             return;
         }

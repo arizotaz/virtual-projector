@@ -67,6 +67,28 @@ router.post("/new_teacher", async (req, res) => {
         return res.status(500).send("Server Error");
     }
 });
+router.post("/new_student", async (req, res) => {
+    try {
+        /**
+            0: "Unknown",
+            1: "Student",
+            2: "Teacher",
+            3: "Administrator",
+            4: "Super",
+        **/
+
+        const {
+            firstName,
+            middleInitial,
+            lastName,
+            email,
+            password,
+        } = req.body;
+        return res.json(await CreateUser(firstName, middleInitial, lastName, email, password, 1));
+    } catch (e) {
+        return res.status(500).send("Server Error");
+    }
+});
 
 router.get("/get_users", async (req, res) => {
     try {

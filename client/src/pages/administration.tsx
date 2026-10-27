@@ -42,6 +42,19 @@ export default function Admin({ user }: { user: UserData | undefined | null }) {
                     </div>
                 </div>
 
+                {/* Create student */}
+                <div className="col-12 col-xl-6">
+                    <div className="card shadow-sm h-100">
+                        <div className="card-header">
+                            <h5 className="mb-0">Create Student</h5>
+                        </div>
+
+                        <div className="card-body">
+                            <UserCreateForm userType="student" uriTarget="/admin/new_student" />
+                        </div>
+                    </div>
+                </div>
+
                 {/* Create teacher */}
                 <div className="col-12 col-xl-6">
                     <div className="card shadow-sm h-100">

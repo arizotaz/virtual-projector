@@ -21,6 +21,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         net-tools \
         gettext-base \
         curl \
+        openssl \
+        certbot \
         ca-certificates \
     && curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
     && apt-get install -y --no-install-recommends nodejs \
@@ -40,5 +42,8 @@ COPY --from=build /app/client/dist /app/frontend
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY site.conf /etc/nginx/conf.d/default.conf
 
-EXPOSE 80
-CMD ["/usr/bin/supervisord", "-n", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh && mkdir -p /var/www/certbot
+
+EXPOSE 80 443
+ENTRYPOINT ["/entrypoint.sh"]

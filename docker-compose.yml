@@ -61,19 +61,26 @@ services:
       DB_DATABASE: ${DB_DATABASE}
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
       COOKIE_SECRET: ${COOKIE_SECRET}
+      DOMAIN: ${DOMAIN}
+      LETSENCRYPT_EMAIL: ${LETSENCRYPT_EMAIL}
+      LE_STAGING: ${LE_STAGING:-}
     healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://localhost/api/health"]
+      test: ["CMD", "curl", "-fsSk", "https://localhost/api/health"]
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 15s
+      start_period: 60s
     ports:
       - "80:80"
+      - "443:443"
+    volumes:
+      - letsencrypt:/etc/letsencrypt
     networks:
       - app_internal
 
 volumes:
   mariadb_data:
+  letsencrypt:
 
 networks:
   app_internal:

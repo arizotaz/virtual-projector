@@ -1,11 +1,10 @@
 FROM node:22-alpine AS build
-RUN mkdir -p /app
+RUN mkdir -p /app/server/database
 
 WORKDIR /app
 
-COPY ./drizzle.config.ts package.json better_migration.ts /app
-
-RUN mkdir -p /app/server/database
-COPY ./server/database/schema.ts ./server/database/init_db.ts /app/server/database
-
+COPY package.json /app
 RUN npm install
+
+COPY ./drizzle.config.ts better_migration.ts /app
+COPY ./server/database/ /app/server/database

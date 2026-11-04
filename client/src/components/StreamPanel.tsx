@@ -1,174 +1,106 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
-type StreamTarget = "window" | "application";
+import type { RelayTree } from "@virtual-projector/shared";
+import { DEFAULT_ROOM, RelayNode, type RelayStatus } from "../webrtc/RelayNode";
+import { StreamDecoder } from "../webrtc/StreamDecoder";
+
+import styles from "../webrtc.module.css"
+
+const EMPTY_TREE: RelayTree = { room: DEFAULT_ROOM, sourceId: null, nodes: [] };
+
+const STATUS_TEXT: Record<RelayStatus, string> = {
+    connecting: "Connecting…",
+    waiting: "Waiting for the host to start streaming",
+    receiving: "",
+    live: "",
+    error: "Error",
+};
 
 export default function StreamPanel() {
-    const [streamTarget, setStreamTarget] =
-        useState<StreamTarget>("window");
+    let streamRef = useRef<MediaStream | null>(null);
+    let previewRef = useRef<HTMLVideoElement>(null)
+    let fakeClientRef = useRef<RelayNode | null>(null);
+    let fakeClientDecoderRef = useRef<StreamDecoder | null>(null);
 
-    const [selectedApplication, setSelectedApplication] =
-        useState("");
+    let clientRefFakeCanvas = useRef<HTMLCanvasElement>(null);
 
-    const [streaming, setStreaming] = useState(false);
+    let [status, setStatus] = useState<RelayStatus | null>(null);
+    let [tree, setTree] = useState<RelayTree>(EMPTY_TREE);
+
+    let StopStream = () => {
+        streamRef.current?.getTracks().forEach((t) => t.stop());
+        streamRef.current = null;
+        fakeClientRef.current?.Stop();
+        fakeClientRef.current = null;
+        fakeClientDecoderRef.current?.Clear();
+        fakeClientDecoderRef.current?.Close();
+        fakeClientDecoderRef.current = null;
+        if (previewRef.current) previewRef.current.srcObject = null;
+        setStatus(null);
+        setTree(EMPTY_TREE);
+    }
+
+    let StartStream = async () => {
+        const stream = await navigator.mediaDevices.getDisplayMedia({
+            // Capped at 1080p/30: every relay uploads this to 3 children, and
+            // screen content gains more from sharp frames than from frame rate.
+            video: { frameRate: 60, width: { max: 3840 }, height: { max: 2160 } },
+            audio: false,
+        });
+        streamRef.current = stream;
+        previewRef.current!.srcObject = stream;
+        await previewRef.current!.play();
+
+        // User hit the browser's own "Stop sharing" button.
+        stream.getVideoTracks()[0]?.addEventListener("ended", StopStream);
+
+        // The fake client is the root of the relay tree. It runs the same
+        // relay code as every viewer; its bytes just come from the one encoder
+        // instead of a parent. The preview below decodes exactly what it sends.
+        let fakeClient = new RelayNode(DEFAULT_ROOM, "source");
+        let decoder = new StreamDecoder(clientRefFakeCanvas.current!);
+        fakeClient.onStatus = (s) => setStatus(s);
+        fakeClient.onTree = setTree;
+        fakeClient.onConfig = (c) => decoder.Configure(c);
+        fakeClient.onFrame = (f) => decoder.Decode(f);
+        decoder.onNeedKeyframe = () => fakeClient.RequestKeyframe();
+        fakeClientDecoderRef.current = decoder;
+        fakeClientRef.current = fakeClient;
+        fakeClient.Start();
+        fakeClient.SetLocalStream(stream);
+    }
+
+    useEffect(() => StopStream, []);
 
     return (
         <>
-        {/* Stream preview */}
-        <div className="col-12 col-xl-8">
-            <div className="card shadow-sm">
-                <div className="card-header d-flex justify-content-between align-items-center">
-                    <h5 className="mb-0">Stream Preview</h5>
+            <div className={`${styles.host}`}>
+                {status ? (
+                    <button onClick={StopStream}>Stop Stream</button>
+                ) : (
+                    <button onClick={StartStream}>Start Stream</button>
+                )}
+                <span> Room: {DEFAULT_ROOM} {status && `· ${STATUS_TEXT[status]}`}</span>
+                <video ref={previewRef} muted playsInline />
+                <br /><br />
+                
+                <details>
+                    <summary>Preview</summary>
+                    <canvas ref={clientRefFakeCanvas} />
+                </details>
 
-                    {streaming && (
-                        <span className="badge text-bg-success">
-                            LIVE
-                        </span>
+                <details>
+                    <summary>Peer-Tree Sumamry</summary>
+                    {tree.sourceId && (
+                        <>
+                            <h3>Relay tree ({tree.nodes.length - 1} viewers)</h3>
+                            {/* <RelayTreeView tree={tree} /> */}
+                        </>
                     )}
-                </div>
+                </details>
 
-                <div className="card-body">
-                    <div
-                        className="bg-dark rounded d-flex align-items-center justify-content-center"
-                        style={{
-                            minHeight: 400,
-                        }}
-                    >
-                        <div className="text-center text-white">
-                            <div
-                                className="mb-3"
-                                style={{ fontSize: 48 }}
-                            >
-                                ▶
-                            </div>
-
-                            <h5>
-                                {streaming
-                                    ? "Stream is live"
-                                    : "Stream preview"}
-                            </h5>
-
-                            <p className="text-white-50 mb-0">
-                                {streamTarget === "window"
-                                    ? "Entire window"
-                                    : selectedApplication ||
-                                        "No application selected"}
-                            </p>
-                        </div>
-                    </div>
-                </div>
             </div>
-        </div>
 
-        {/* Stream controls */}
-        <div className="col-12 col-xl-4">
-            <div className="card shadow-sm">
-                <div className="card-header">
-                    <h5 className="mb-0">Stream Controls</h5>
-                </div>
-
-                <div>
-                    {streaming ? (
-                        <button
-                            type="button"
-                            className="btn btn-danger w-100"
-                            onClick={() => setStreaming(false)}
-                        >
-                            Stop Stream
-                        </button>
-                    ) : (
-                        <button
-                            type="button"
-                            className="btn btn-success w-100"
-                            onClick={() => setStreaming(true)}
-                        >
-                            Start Stream
-                        </button>
-                    )}
-                </div>
-
-                <div className="card-body">
-                    <label className="form-label">
-                        Stream Target
-                    </label>
-
-                    <div className="btn-group w-100 mb-3">
-                        <button
-                            type="button"
-                            className={`btn ${
-                                streamTarget === "window"
-                                    ? "btn-primary"
-                                    : "btn-outline-primary"
-                            }`}
-                            onClick={() =>
-                                setStreamTarget("window")
-                            }
-                        >
-                            Entire Window
-                        </button>
-
-                        <button
-                            type="button"
-                            className={`btn ${
-                                streamTarget === "application"
-                                    ? "btn-primary"
-                                    : "btn-outline-primary"
-                            }`}
-                            onClick={() =>
-                                setStreamTarget("application")
-                            }
-                        >
-                            Application
-                        </button>
-                    </div>
-
-                    {streamTarget === "application" && (
-                        <div className="mb-3">
-                            <label
-                                htmlFor="application"
-                                className="form-label"
-                            >
-                                Application Window
-                            </label>
-
-                            <select
-                                id="application"
-                                className="form-select"
-                                value={selectedApplication}
-                                onChange={(event) =>
-                                    setSelectedApplication(
-                                        event.target.value
-                                    )
-                                }
-                            >
-                                <option value="">
-                                    Select an application...
-                                </option>
-
-                                <option value="Google Chrome">
-                                    Google Chrome
-                                </option>
-
-                                <option value="Visual Studio Code">
-                                    Visual Studio Code
-                                </option>
-
-                                <option value="Microsoft Word">
-                                    Microsoft Word
-                                </option>
-                            </select>
-                        </div>
-                    )}
-
-                    <div className="alert alert-info mb-0">
-                        <strong>Target:</strong>{" "}
-                        {streamTarget === "window"
-                            ? "Entire window"
-                            : selectedApplication ||
-                                "No application selected"}
-                    </div>
-                </div>
-            </div>
-        </div>
         </>
     );
 }

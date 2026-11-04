@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { GetBackendStr } from "../utilities/browser_utils";
 
+import StreamView from '../components/StreamView';
+
 interface Enrollment {
     crn: string;
     name: string;
@@ -54,6 +56,7 @@ export default function Student() {
                 </p>
 
                 {/* class content here */}
+                <StreamView />
             </main>
         );
     }

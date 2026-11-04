@@ -41,44 +41,54 @@ export default function Admin({ user }: { user: UserData | undefined | null }) {
                         </div>
                     </div>
                 </div>
+            </div>
 
+            <div className="row g-4 mt-4">
                 {/* Create student */}
-                <div className="col-12 col-xl-6">
+                <div className="col">
                     <div className="card shadow-sm h-100">
                         <div className="card-header">
                             <h5 className="mb-0">Create Student</h5>
                         </div>
 
                         <div className="card-body">
-                            <UserCreateForm userType="student" uriTarget="/admin/new_student" />
+                            <UserCreateForm
+                                userType="student"
+                                uriTarget="/admin/new_student"
+                            />
                         </div>
                     </div>
                 </div>
 
                 {/* Create teacher */}
-                <div className="col-12 col-xl-6">
+                <div className="col">
                     <div className="card shadow-sm h-100">
                         <div className="card-header">
                             <h5 className="mb-0">Create Teacher</h5>
                         </div>
 
                         <div className="card-body">
-                            <UserCreateForm userType="teacher" uriTarget="/admin/new_teacher" />
+                            <UserCreateForm
+                                userType="teacher"
+                                uriTarget="/admin/new_teacher"
+                            />
                         </div>
                     </div>
                 </div>
 
-                {/* Create administrator IF ROLE = SUPER */}
+                {/* Create admins (only show for the super-admin) */}
                 {role === "super" && (
-                    <div className="col-12 col-xl-6">
+                    <div className="col">
                         <div className="card shadow-sm h-100">
                             <div className="card-header">
                                 <h5 className="mb-0">Create Administrator</h5>
                             </div>
 
-
                             <div className="card-body">
-                                <UserCreateForm userType="admin" uriTarget="/admin/new_admin" />
+                                <UserCreateForm
+                                    userType="admin"
+                                    uriTarget="/admin/new_admin"
+                                />
                             </div>
                         </div>
                     </div>

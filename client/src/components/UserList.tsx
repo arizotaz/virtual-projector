@@ -130,8 +130,9 @@ export default function UserList() {
         <>
             <Feedback success={success} message={msg} />
 
-            <div className="row g-3 mb-3">
-                <div className="col-12 col-md-8">
+            {/* Filter Controls */}
+            <div className="row g-3 mb-3 align-items-end">
+                <div className="col-12 col-md-7">
                     <label htmlFor="user-search" className="form-label">
                         Search
                     </label>
@@ -164,8 +165,21 @@ export default function UserList() {
                         <option value="super">Super Administrator</option>
                     </select>
                 </div>
+
+                <div className="col-12 col-md-1">
+                    <button
+                        type="button"
+                        className="btn btn-outline-secondary w-100"
+                        onClick={loadUsers}
+                        disabled={loading}
+                        title="Refresh users"
+                    >
+                        <i className={`bi bi-arrow-clockwise ${loading ? "spinner-border spinner-border-sm" : ""}`}>Refresh</i>
+                    </button>
+                </div>
             </div>
 
+            {/* User Directory Table */}
             <div className={`table-responsive ${loading ? "opacity-50" : ""}`}>
                 <table className="table table-hover align-middle mb-0">
                     <thead>
@@ -222,6 +236,7 @@ export default function UserList() {
                 </table>
             </div>
 
+            {/* Table Page Controls */}
             <div className="d-flex justify-content-between align-items-center mt-3">
                 <small className="text-muted">
                     Page {page} &middot; showing {visibleUsers.length} of {users.length} loaded

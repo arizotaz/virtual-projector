@@ -7,17 +7,22 @@ export default function UserCreateForm({ userType, uriTarget } : { userType: str
     const [success, SetSuccess] = useState(false);
     const [msg, SetMsg] = useState<string|undefined|null>("");
 
+    const [fname, SetFirstName] = useState("");
+    const [middleInit, SetMiddleInit] = useState("");
+    const [lname, SetLastName] = useState("");
+    const [email, SetEmail] = useState("");
+    const [password, SetPassword] = useState("");
+
     async function handleSubmit(event: React.SubmitEvent<HTMLFormElement>) {
         try {
             event.preventDefault();
 
-            const form = new FormData(event.currentTarget);
             const data = {
-                firstName: form.get("firstName"),
-                middleInitial: form.get("middleInitial"),
-                lastName: form.get("lastName"),
-                email: form.get("email"),
-                password: form.get("password"),
+                firstName: fname,
+                middleInitial: middleInit,
+                lastName: lname,
+                email: email,
+                password: password,
             };
             
             console.log(`[!] Create ${userType}:`, data);
@@ -43,6 +48,13 @@ export default function UserCreateForm({ userType, uriTarget } : { userType: str
             }, result.success ? 1000 : 3000);
     
             if (result.success) {
+                // reset form
+                SetFirstName("");
+                SetMiddleInit("");
+                SetLastName("");
+                SetEmail("");
+                SetPassword("");
+
                 console.log(`[+] Created ${userType} Successful`)
             } else {
                 console.error(`[-] ${userType} Creation Failed!`)
@@ -63,6 +75,8 @@ export default function UserCreateForm({ userType, uriTarget } : { userType: str
                             name="firstName"
                             type="text"
                             className="form-control"
+                            value={fname}
+                            onChange={(e) => SetFirstName(e.target.value)}
                             required
                         />
                     </div>
@@ -74,6 +88,8 @@ export default function UserCreateForm({ userType, uriTarget } : { userType: str
                             type="text"
                             className="form-control"
                             maxLength={1}
+                            value={middleInit}
+                            onChange={(e) => SetMiddleInit(e.target.value)}
                         />
                     </div>
 
@@ -83,6 +99,8 @@ export default function UserCreateForm({ userType, uriTarget } : { userType: str
                             name="lastName"
                             type="text"
                             className="form-control"
+                            value={lname}
+                            onChange={(e) => SetLastName(e.target.value)}
                             required
                         />
                     </div>
@@ -93,6 +111,8 @@ export default function UserCreateForm({ userType, uriTarget } : { userType: str
                             name="email"
                             type="email"
                             className="form-control"
+                            value={email}
+                            onChange={(e) => SetEmail(e.target.value)}
                             required
                         />
                     </div>
@@ -103,6 +123,8 @@ export default function UserCreateForm({ userType, uriTarget } : { userType: str
                             name="password"
                             type="password"
                             className="form-control"
+                            value={password}
+                            onChange={(e) => SetPassword(e.target.value)}
                             required
                             minLength={8}
                         />

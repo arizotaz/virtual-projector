@@ -1,0 +1,78 @@
+.navbar {
+    width: 100%;
+    background-color: rgba(0, 0, 0);
+    box-shadow: 0px 0px 15px rgb(0,0,0);
+
+}
+
+.navbar>.container {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    height: 100%;
+    padding: 2px 10px;
+    color: #fff;
+}
+
+.userProfile {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    background-color: rgba(255,255,255, .1);
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, .5);
+
+    border-radius: 1rem;
+    padding: 5px;
+}
+
+.userProfile>.container {
+    display: flex;
+    flex-direction: row;
+}
+
+.userProfile .container .picture {
+    overflow: hidden;
+    width: 3rem;
+    border-radius: 50%;
+    border: 2px solid rgba(0, 0, 0, .5);
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, .5);
+}
+
+/* 
+This is the actual image object.
+If we ever decide to change the image to an <img>
+this is the section to change
+*/
+.userProfile .profileImage {
+    width: 100%;
+    height: 100%;
+    aspect-ratio: 1;
+    background: linear-gradient(135deg, #0d6efd, #6f42c1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #000;
+}
+
+.userProfile .info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    padding-left: 5px;
+}
+
+.userProfile .info .name {
+    margin: 0px;
+    padding: 0px;
+    font-size: 0.8rem;
+
+}
+
+.userProfile .info .email {
+    margin: 0px;
+    padding: 0px;
+    font-size: 0.8rem;
+
+}

@@ -15,9 +15,9 @@ CREATE TABLE `classes` (
 --> statement-breakpoint
 CREATE TABLE `enrollments` (
 	`studentid` uuid NOT NULL,
-	`class_crn` varchar(32) NOT NULL,
+	`crn` varchar(32) NOT NULL,
 	`sectionid` varchar(5) NOT NULL,
-	CONSTRAINT `enrollments_studentid_class_crn_sectionid_pk` PRIMARY KEY(`studentid`,`class_crn`,`sectionid`)
+	CONSTRAINT `enrollments_studentid_crn_sectionid_pk` PRIMARY KEY(`studentid`,`crn`,`sectionid`)
 );
 --> statement-breakpoint
 CREATE TABLE `roles` (
@@ -28,10 +28,10 @@ CREATE TABLE `roles` (
 );
 --> statement-breakpoint
 CREATE TABLE `sections` (
-	`class_crn` varchar(32) NOT NULL,
+	`crn` varchar(32) NOT NULL,
 	`sectionid` varchar(5) NOT NULL,
 	`lecturer` uuid NOT NULL,
-	CONSTRAINT `sections_class_crn_sectionid_pk` PRIMARY KEY(`class_crn`,`sectionid`)
+	CONSTRAINT `sections_crn_sectionid_pk` PRIMARY KEY(`crn`,`sectionid`)
 );
 --> statement-breakpoint
 CREATE TABLE `sessions` (
@@ -49,17 +49,19 @@ CREATE TABLE `user_roles` (
 );
 --> statement-breakpoint
 CREATE TABLE `users` (
-	`id` uuid NOT NULL,
+	`id` uuid NOT NULL DEFAULT (uuid()),
 	`first_name` varchar(100) NOT NULL,
 	`middle_initial` varchar(100),
 	`last_name` varchar(100),
 	`email` varchar(100) NOT NULL,
-	CONSTRAINT `users_id` PRIMARY KEY(`id`)
+	`password_hash` varchar(64) NOT NULL,
+	CONSTRAINT `users_id` PRIMARY KEY(`id`),
+	CONSTRAINT `users_email_unique` UNIQUE(`email`)
 );
 --> statement-breakpoint
 ALTER TABLE `accounts` ADD CONSTRAINT `accounts_userid_users_id_fk` FOREIGN KEY (`userid`) REFERENCES `users`(`id`) ON DELETE cascade ON UPDATE cascade;--> statement-breakpoint
-ALTER TABLE `enrollments` ADD CONSTRAINT `FK_enrollments_classes` FOREIGN KEY (`class_crn`,`sectionid`) REFERENCES `sections`(`class_crn`,`sectionid`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE `sections` ADD CONSTRAINT `sections_class_crn_classes_crn_fk` FOREIGN KEY (`class_crn`) REFERENCES `classes`(`crn`) ON DELETE cascade ON UPDATE cascade;--> statement-breakpoint
+ALTER TABLE `enrollments` ADD CONSTRAINT `FK_enrollments_sections` FOREIGN KEY (`crn`,`sectionid`) REFERENCES `sections`(`crn`,`sectionid`) ON DELETE cascade ON UPDATE cascade;--> statement-breakpoint
+ALTER TABLE `sections` ADD CONSTRAINT `sections_crn_classes_crn_fk` FOREIGN KEY (`crn`) REFERENCES `classes`(`crn`) ON DELETE cascade ON UPDATE cascade;--> statement-breakpoint
 ALTER TABLE `sections` ADD CONSTRAINT `sections_lecturer_users_id_fk` FOREIGN KEY (`lecturer`) REFERENCES `users`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `sessions` ADD CONSTRAINT `sessions_userid_users_id_fk` FOREIGN KEY (`userid`) REFERENCES `users`(`id`) ON DELETE cascade ON UPDATE cascade;--> statement-breakpoint
 ALTER TABLE `user_roles` ADD CONSTRAINT `user_roles_userid_users_id_fk` FOREIGN KEY (`userid`) REFERENCES `users`(`id`) ON DELETE cascade ON UPDATE cascade;--> statement-breakpoint

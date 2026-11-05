@@ -38,7 +38,12 @@ Define events in `shared/src/index.ts`. Both `server/src/index.ts` and `client/s
 
 Set `PORT` to change the server port (default 4000).
 
-## Docker Workflow
+## Local Build with npm :computer:
+```console
+npm install; npm run build && npm start
+```
+
+## Docker Workflow :whale:
 To enable production certificate with LetsEncrypt for HTTPS set set the `LE_STAGING` -> `LE_STAGING=`
 ```console
 docker compose up --build -d

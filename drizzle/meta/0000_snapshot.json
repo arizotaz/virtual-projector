@@ -1,7 +1,7 @@
 {
   "version": "5",
   "dialect": "mysql",
-  "id": "17282e1c-ba7d-4be7-b2fe-0e7247d6d3ed",
+  "id": "a4cb9dd3-4273-48f1-ad6a-126702a86148",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "accounts": {
@@ -111,8 +111,8 @@
           "notNull": true,
           "autoincrement": false
         },
-        "class_crn": {
-          "name": "class_crn",
+        "crn": {
+          "name": "crn",
           "type": "varchar(32)",
           "primaryKey": false,
           "notNull": true,
@@ -128,28 +128,28 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "FK_enrollments_classes": {
-          "name": "FK_enrollments_classes",
+        "FK_enrollments_sections": {
+          "name": "FK_enrollments_sections",
           "tableFrom": "enrollments",
           "tableTo": "sections",
           "columnsFrom": [
-            "class_crn",
+            "crn",
             "sectionid"
           ],
           "columnsTo": [
-            "class_crn",
+            "crn",
             "sectionid"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
         }
       },
       "compositePrimaryKeys": {
-        "enrollments_studentid_class_crn_sectionid_pk": {
-          "name": "enrollments_studentid_class_crn_sectionid_pk",
+        "enrollments_studentid_crn_sectionid_pk": {
+          "name": "enrollments_studentid_crn_sectionid_pk",
           "columns": [
             "studentid",
-            "class_crn",
+            "crn",
             "sectionid"
           ]
         }
@@ -198,8 +198,8 @@
     "sections": {
       "name": "sections",
       "columns": {
-        "class_crn": {
-          "name": "class_crn",
+        "crn": {
+          "name": "crn",
           "type": "varchar(32)",
           "primaryKey": false,
           "notNull": true,
@@ -222,12 +222,12 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "sections_class_crn_classes_crn_fk": {
-          "name": "sections_class_crn_classes_crn_fk",
+        "sections_crn_classes_crn_fk": {
+          "name": "sections_crn_classes_crn_fk",
           "tableFrom": "sections",
           "tableTo": "classes",
           "columnsFrom": [
-            "class_crn"
+            "crn"
           ],
           "columnsTo": [
             "crn"
@@ -250,10 +250,10 @@
         }
       },
       "compositePrimaryKeys": {
-        "sections_class_crn_sectionid_pk": {
-          "name": "sections_class_crn_sectionid_pk",
+        "sections_crn_sectionid_pk": {
+          "name": "sections_crn_sectionid_pk",
           "columns": [
-            "class_crn",
+            "crn",
             "sectionid"
           ]
         }
@@ -386,7 +386,8 @@
           "type": "uuid",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false
+          "autoincrement": false,
+          "default": "(uuid())"
         },
         "first_name": {
           "name": "first_name",
@@ -415,6 +416,13 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
+        },
+        "password_hash": {
+          "name": "password_hash",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
         }
       },
       "indexes": {},
@@ -427,7 +435,14 @@
           ]
         }
       },
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "users_email_unique": {
+          "name": "users_email_unique",
+          "columns": [
+            "email"
+          ]
+        }
+      },
       "checkConstraint": {}
     }
   },

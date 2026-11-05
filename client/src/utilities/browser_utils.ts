@@ -16,10 +16,11 @@ export type UserData = {
  * @returns url string to provided directory endpoint
  */
 export function GetBackendStr(dir: string) {
-    let base = import.meta.env.VITE_BACK_END_HOST ?? "/api/";
-    if (!base.endsWith("/")) base += "/";
+    //                  (npm run dev | npm start)          (docker compose)
+    let BASE_DIR = import.meta.env.VITE_BACK_END_HOST ?? "/api/";
+    if (!BASE_DIR.endsWith("/")) BASE_DIR += "/";
 
-    const baseUrl = new URL(base, window.location.origin);
+    const baseUrl = new URL(BASE_DIR, window.location.origin);
     return new URL(dir.replace(/^\/+/, ""), baseUrl).toString();
 }
 

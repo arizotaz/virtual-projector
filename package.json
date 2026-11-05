@@ -9,6 +9,9 @@
     "client"
   ],
   "scripts": {
+    "db:generate": "npx drizzle-kit generate",
+    "db:migrate": "node better_migration.ts",
+    "db:init": "node ./server/database/init_db.ts",
     "dev": "concurrently -n server,client -c blue,green \"npm:dev -w server\" \"npm:dev -w client\"",
     "build": "npm run build -w client && npm run build -w server",
     "start": "npm run start -w server",
@@ -16,6 +19,15 @@
   },
   "devDependencies": {
     "concurrently": "^10.0.5",
+    "drizzle-kit": "^0.31.11",
+    "tsx": "^4.23.15",
     "typescript": "^7.0.2"
+  },
+  "dependencies": {
+    "cookie-parser": "^1.4.7",
+    "dotenv": "^18.0.8",
+    "drizzle-orm": "^0.45.4",
+    "mysql2": "^3.24.6",
+    "react-router-dom": "^7.18.4"
   }
 }

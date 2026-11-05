@@ -37,3 +37,14 @@ Add a dependency to one package with `npm install <pkg> -w client` (or `-w serve
 Define events in `shared/src/index.ts`. Both `server/src/index.ts` and `client/src/socket.ts` are typed against those interfaces, so a mismatched event name or payload is a compile error.
 
 Set `PORT` to change the server port (default 4000).
+
+## Local Build with npm :computer:
+```console
+npm install; npm run build && npm start
+```
+
+## Docker Workflow :whale:
+To enable production certificate with LetsEncrypt for HTTPS set set the `LE_STAGING` -> `LE_STAGING=`
+```console
+docker compose up --build -d
+```

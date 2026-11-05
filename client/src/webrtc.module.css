@@ -1,0 +1,47 @@
+.client {
+    background-color: rgba(50, 50, 50);
+    height: 100%;
+}
+
+.client .container {
+    width: 100vw;
+    height: 100vh;
+    padding: 20px;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.client canvas {
+    background-color: rgba(0, 0, 0, 1);
+    border-radius: 10px;
+    max-width: 100%;
+    max-height: 100%;
+    box-shadow: 10px 10px 50px rgba(0,0,0);
+}
+
+.host video,
+.host canvas {
+    width:100%;
+    background-color: rgba(0,0,0);
+}
+.client .overlay {
+    position: fixed;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: white;
+    font-family: system-ui, sans-serif;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.debug {
+    font-family: system-ui, sans-serif;
+    padding: 24px;
+}

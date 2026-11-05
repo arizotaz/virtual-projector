@@ -1,33 +1,45 @@
+import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { socket } from "./socket";
+
+import Navbar from "./components/navbar";
+import Home from "./pages/home";
+import Login from "./pages/login";
+import StudentPanel from "./pages/student";
+import TeacherPanel from "./pages/teacher";
+import AdminPanel from "./pages/administration";
+
+import { GetBackendStr, UserData } from "./utilities/browser_utils";
 
 export default function App() {
-  const [connected, setConnected] = useState(socket.connected);
-  const [lastPong, setLastPong] = useState<number | null>(null);
+    const [user, setUser] = useState<UserData | undefined | null>(null);
 
-  useEffect(() => {
-    const onConnect = () => setConnected(true);
-    const onDisconnect = () => setConnected(false);
-    const onPong = ({ serverTime }: { serverTime: number }) => setLastPong(serverTime);
+    useEffect(() => {
+        let cancelled = false;
 
-    socket.on("connect", onConnect);
-    socket.on("disconnect", onDisconnect);
-    socket.on("pong", onPong);
-    return () => {
-      socket.off("connect", onConnect);
-      socket.off("disconnect", onDisconnect);
-      socket.off("pong", onPong);
-    };
-  }, []);
+        async function GetUserInfo() {
+            try {
+                const response = await fetch(GetBackendStr("/me"), { credentials: "include" });
+                const data = response.ok ? await response.json() : null;
+                if (!cancelled) setUser(data?.user ?? undefined);
+            } catch {
+                if (!cancelled) setUser(undefined);
+            }
+        }
 
-  return (
-    <main style={{ fontFamily: "system-ui, sans-serif", padding: 24 }}>
-      <h1>Virtual Projector</h1>
-      <p>Socket: {connected ? "connected" : "disconnected"}</p>
-      <button onClick={() => socket.emit("ping")} disabled={!connected}>
-        Ping server
-      </button>
-      {lastPong && <p>Last pong: {new Date(lastPong).toLocaleTimeString()}</p>}
-    </main>
-  );
+        GetUserInfo();
+        return () => { cancelled = true; };
+    }, []);
+
+    return (
+        <Router>
+            <Navbar user={user} />
+            <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/student" element={<StudentPanel />} />
+                <Route path="/teacher" element={<TeacherPanel user={user} />} />
+                <Route path="/admin" element={<AdminPanel user={user} />} />
+            </Routes>
+        </Router>
+    );
 }

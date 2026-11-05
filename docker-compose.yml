@@ -1,0 +1,79 @@
+services:
+  mariadb:
+    image: mariadb:11
+    restart: unless-stopped
+    environment:
+      MARIADB_USER: ${DB_USER}
+      MARIADB_PASSWORD: ${DB_PASSWORD}
+      MARIADB_DATABASE: ${DB_DATABASE}
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    networks:
+      - app_internal
+
+  migrate:
+    build:
+      context: .
+      dockerfile: ./migrate/Dockerfile
+    environment:
+      DB_HOST: mariadb
+      DB_PORT: 3306
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_DATABASE: ${DB_DATABASE}
+      ADMIN_USER: ${ADMIN_USER}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+    # execute after the dockerfile has been parsed so the env variables are present
+    command: >
+      sh -c "
+        npm run db:generate &&
+        npm run db:migrate &&
+        npm run db:init
+      "
+    networks:
+      - app_internal
+    depends_on:
+      mariadb:
+        condition: service_healthy
+
+  app:
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    environment:
+      PROD: production
+      DB_HOST: mariadb
+      DB_PORT: 3306
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_DATABASE: ${DB_DATABASE}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
+      COOKIE_SECRET: ${COOKIE_SECRET}
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    ports:
+      - "80:80"
+    networks:
+      - app_internal
+
+volumes:
+  mariadb_data:
+
+networks:
+  app_internal:

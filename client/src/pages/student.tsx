@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { GetBackendStr } from "../utilities/browser_utils";
 
+import { ClassRoomName } from '@virtual-projector/shared';
 import StreamView from '../components/StreamView';
 
 interface Enrollment {
@@ -56,7 +57,7 @@ export default function Student() {
                 </p>
 
                 {/* class content here */}
-                <StreamView />
+                <StreamView room={ClassRoomName(selectedEnrollment.crn, selectedEnrollment.section)} />
             </main>
         );
     }

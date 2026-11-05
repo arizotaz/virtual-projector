@@ -21,7 +21,6 @@ type RelaySocket = Socket<ServerToClientEvents, ClientToServerEvents>;
 
 export type { RelayStatus };
 
-export const DEFAULT_ROOM = "DemoRoom";
 
 // A TURN server is needed for peers behind symmetric NATs
 // For now we are just using google's
@@ -155,6 +154,10 @@ export class RelayNode {
         // control connection alongside the fake client
         this.socket = io({ forceNew: true, autoConnect: false });
         this.socket.on("connect", this.Join);
+        // active is false when the server refused the connection, so it won't retry
+        this.socket.on("connect_error", (e) => {
+            if (!this.socket.active) this.SetStatus("error", e.message);
+        });
         this.socket.on("disconnect", this.OnDisconnect);
         this.socket.on("relay:set-parent", ({ parentId }) => this.SetParent(parentId));
         this.socket.on("relay:add-child", ({ childId }) => this.AddChild(childId));

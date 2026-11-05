@@ -1,12 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 
 import type { RelayTree } from "@virtual-projector/shared";
-import { DEFAULT_ROOM, RelayNode, type RelayStatus } from "../webrtc/RelayNode";
+import { RelayNode, type RelayStatus } from "../webrtc/RelayNode";
 import { StreamDecoder } from "../webrtc/StreamDecoder";
 
 import styles from "../webrtc.module.css"
-
-const EMPTY_TREE: RelayTree = { room: DEFAULT_ROOM, sourceId: null, nodes: [] };
 
 const STATUS_TEXT: Record<RelayStatus, string> = {
     connecting: "Connecting…",
@@ -16,7 +14,9 @@ const STATUS_TEXT: Record<RelayStatus, string> = {
     error: "Error",
 };
 
-export default function StreamPanel() {
+export default function StreamPanel({ room }: { room: string }) {
+    const EMPTY_TREE: RelayTree = { room, sourceId: null, nodes: [] };
+
     let streamRef = useRef<MediaStream | null>(null);
     let previewRef = useRef<HTMLVideoElement>(null)
     let fakeClientRef = useRef<RelayNode | null>(null);
@@ -25,6 +25,7 @@ export default function StreamPanel() {
     let clientRefFakeCanvas = useRef<HTMLCanvasElement>(null);
 
     let [status, setStatus] = useState<RelayStatus | null>(null);
+    let [error, setError] = useState<string | undefined>();
     let [tree, setTree] = useState<RelayTree>(EMPTY_TREE);
 
     let StopStream = () => {
@@ -57,9 +58,12 @@ export default function StreamPanel() {
         // The fake client is the root of the relay tree. It runs the same
         // relay code as every viewer; its bytes just come from the one encoder
         // instead of a parent. The preview below decodes exactly what it sends.
-        let fakeClient = new RelayNode(DEFAULT_ROOM, "source");
+        let fakeClient = new RelayNode(room, "source");
         let decoder = new StreamDecoder(clientRefFakeCanvas.current!);
-        fakeClient.onStatus = (s) => setStatus(s);
+        fakeClient.onStatus = (s, detail) => {
+            setStatus(s);
+            setError(detail);
+        };
         fakeClient.onTree = setTree;
         fakeClient.onConfig = (c) => decoder.Configure(c);
         fakeClient.onFrame = (f) => decoder.Decode(f);
@@ -80,7 +84,7 @@ export default function StreamPanel() {
                 ) : (
                     <button onClick={StartStream}>Start Stream</button>
                 )}
-                <span> Room: {DEFAULT_ROOM} {status && `· ${STATUS_TEXT[status]}`}</span>
+                <span> Room: {room} {status && `· ${status === "error" && error ? error : STATUS_TEXT[status]}`}</span>
                 <video ref={previewRef} muted playsInline />
                 <br /><br />
                 

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-import { DEFAULT_ROOM, RelayNode, type RelayStatus } from "../webrtc/RelayNode";
+import { RelayNode, type RelayStatus } from "../webrtc/RelayNode";
 import { StreamDecoder } from "../webrtc/StreamDecoder";
 
 import styles from "../webrtc.module.css";
@@ -13,7 +13,7 @@ const STATUS_TEXT: Record<RelayStatus, string> = {
     error: "Error",
 };
 
-export default function StreamView() {
+export default function StreamView({ room }: { room: string }) {
     let canvasRef = useRef<HTMLCanvasElement>(null);
     let [status, setStatus] = useState<RelayStatus>("connecting");
     let [error, setError] = useState<string | undefined>();
@@ -21,7 +21,7 @@ export default function StreamView() {
     useEffect(() => {
         // Every viewer is also a relay, it forwards what it receives to its own children.
         // Forwarding never decodes, the decoder here is only so this viewer can watch.
-        let node = new RelayNode(DEFAULT_ROOM, "viewer");
+        let node = new RelayNode(room, "viewer");
         let decoder = new StreamDecoder(canvasRef.current!);
         node.onStatus = (s, detail) => {
             setStatus(s);
@@ -40,7 +40,7 @@ export default function StreamView() {
             node.Stop();
             decoder.Close();
         };
-    }, []);
+    }, [room]);
 
     return (
         <>

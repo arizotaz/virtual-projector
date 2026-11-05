@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { ClassRoomName } from "@virtual-projector/shared";
 import StreamPanel from "./StreamPanel";
 import { GetBackendStr } from "../utilities/browser_utils";
 import Feedback from '../components/feedback';
@@ -171,7 +172,7 @@ export default function ClassView({
             </div>
 
             <div className="row g-4">
-                <StreamPanel />
+                <StreamPanel room={ClassRoomName(classItem.crn, classItem.section)} />
 
                 {/* Student allow list */}
                 <div className="col-12">

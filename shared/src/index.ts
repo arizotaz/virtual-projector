@@ -3,6 +3,10 @@
 /** Max number of downstream peers a single relay node forwards to */
 export const RELAY_MAX_CHILDREN = 3;
 
+/** The stream room for a class section. Encoded so two different sections can't produce the same name */
+export const ClassRoomName = (crn: string, section: string) =>
+  `${encodeURIComponent(crn)}:${encodeURIComponent(section)}`;
+
 /** "source" is the host's fake client at the top of the tree; everyone else is a "viewer" */
 export type RelayRole = "source" | "viewer";
 

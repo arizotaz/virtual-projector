@@ -10,7 +10,7 @@ import {
  */
 
 import { drizzle } from 'drizzle-orm/mysql2';
-import { eq, and } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
 import mysql from 'mysql2/promise';
 import * as schema from '../database/schema';
 
@@ -85,6 +85,7 @@ export async function getUserBySession(sid: string) {
             .innerJoin(schema.users, eq(schema.users.id, schema.sessions.userid))
             .leftJoin(schema.userRoles, eq(schema.userRoles.userid, schema.users.id))
             .where(eq(schema.sessions.sessionID, sessid))
+            .orderBy(desc(schema.userRoles.roleid)) // highest role, matching GetUsers
             .limit(1);
 
         if (!row) return undefined;
@@ -234,25 +235,32 @@ export async function CreateUser(
             .update(password)
             .digest("hex");
 
-        await db.insert(schema.users).ignore().values({
-            firstName: firstName,
-            middleInitial: middleInitial,
-            lastName: lastName,
-            email: email,
-            password_hash: password_hash,
-        });
-        
-        const [insertedUser] = await db.select({ uid: schema.users.id })
-            .from(schema.users).where(eq(
-                schema.users.email, email
-            )).limit(1);
-        await db.insert(schema.userRoles).ignore().values({
-            userid: insertedUser.uid,
-            roleid: role
+        // In a transaction so a failed role insert can't leave a user with no role
+        await db.transaction(async (tx) => {
+            await tx.insert(schema.users).values({
+                firstName: firstName,
+                middleInitial: middleInitial,
+                lastName: lastName,
+                email: email,
+                password_hash: password_hash,
+            });
+
+            const [insertedUser] = await tx.select({ uid: schema.users.id })
+                .from(schema.users).where(eq(
+                    schema.users.email, email
+                )).limit(1);
+            await tx.insert(schema.userRoles).values({
+                userid: insertedUser.uid,
+                roleid: role
+            });
         });
 
         return { "success": true, "message": `Created new ${roles[role]}!` }
     } catch (e) {
+        // email is the only unique column on users
+        if ((e as { cause?: { code?: string } }).cause?.code === "ER_DUP_ENTRY") {
+            return { "success": false, "message": "A user with that email already exists" }
+        }
         console.error("[CREATE-USER Err]", e);
         return { "success": false, "message": `Failed to Create ${roles[role]}` }
     }

@@ -1,6 +1,7 @@
 import { eq, and, max } from "drizzle-orm";
 import * as schema from '../database/schema';
 import { db, getUserBySession } from "./utils";
+import { ClassRoomName } from "@virtual-projector/shared";
 
 /**
  * Returns if a teacher's session (sid) has ownership of a class
@@ -37,7 +38,7 @@ const topRole = max(schema.userRoles.roleid);
 
 export async function AddStudent(email: string, crn: string, section: string, sid: string) {
     try {
-        if (!CheckClassOwnership(crn, sid, section)) {
+        if (!await CheckClassOwnership(crn, sid, section)) {
             return {
                 "success": false,
                 "message": "Modification Denied"
@@ -86,7 +87,7 @@ export async function AddStudent(email: string, crn: string, section: string, si
 }
 export async function RemoveStudent(email: string, crn: string, section: string, sid: string) {
     try {
-        if (!CheckClassOwnership(crn, sid, section)) {
+        if (!await CheckClassOwnership(crn, sid, section)) {
             return {
                 "success": false,
                 "message": "Modification Denied"
@@ -157,9 +158,17 @@ export async function GetClasses(sid: string) {
     }
 }
 
+/**
+ * Returns if a session (sid) is the lecturer of the section a stream room belongs to
+ */
+export async function IsRoomLecturer(room: string, sid: string) {
+    const sections = await GetClasses(sid);
+    return sections.some((s) => ClassRoomName(s.crn, s.section) === room);
+}
+
 export async function GetStudents(crn: string, section: string, sid: string) {
     try {
-        if (!CheckClassOwnership(crn, sid, section)) {
+        if (!await CheckClassOwnership(crn, sid, section)) {
             return {
                 "success": false,
                 "students": []
@@ -230,7 +239,7 @@ export async function AddClass(name: string, crn: string, section: string, sid: 
 }
 export async function RemoveClass(crn: string, sid: string) {
     try {
-        if (!CheckClassOwnership(crn, sid)) {
+        if (!await CheckClassOwnership(crn, sid)) {
             return {
                 "success": false,
                 "message": "Modification Denied"
@@ -257,7 +266,7 @@ export async function RemoveClass(crn: string, sid: string) {
 
 export async function AddSection(crn: string, section: string, sid: string) {
     try {
-        if (!CheckClassOwnership(crn, sid, section)) {
+        if (!await CheckClassOwnership(crn, sid, section)) {
             return {
                 "success": false,
                 "message": "Modification Denied"
@@ -292,7 +301,7 @@ export async function AddSection(crn: string, section: string, sid: string) {
 }
 export async function RemoveSection(crn: string, section:string, sid: string) {
     try {
-        if (!CheckClassOwnership(crn, sid, section)) {
+        if (!await CheckClassOwnership(crn, sid, section)) {
             return {
                 "success": false,
                 "message": "Modification Denied"

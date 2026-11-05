@@ -2,6 +2,7 @@ import express from "express";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import { GetInfo, Login, Logout, SESSION_TTL_MS } from "./utils";
+import { IsRoomLecturer } from "./teacher_utils";
 
 const PORT = Number(process.env.PORT ?? 3000);
 
@@ -77,7 +78,7 @@ app.post("/login", async (req, res) => {
  * @description - Section related to socket.io/webrtc logic
  */
 import type { ClientToServerEvents, ServerToClientEvents } from "@virtual-projector/shared";
-import { createServer } from "node:http";
+import { createServer, type IncomingMessage } from "node:http";
 import { fileURLToPath } from "node:url";
 import { existsSync } from "node:fs";
 import { Server } from "socket.io";
@@ -99,11 +100,21 @@ if (existsSync(clientDist)) {
     });
 }
 
+// Every socket needs a valid session, using the same "sid" cookie as the REST routes
+io.engine.use(cookieParser());
+io.use(async (socket, next) => {
+  const { cookies } = socket.request as IncomingMessage & { cookies?: Record<string, string> };
+  const sid = cookies?.sid ?? "";
+  if (!await GetInfo(sid)) return next(new Error("Not authenticated"));
+  socket.data.sid = sid;
+  next();
+});
+
 io.on("connection", (socket) => {
   console.log(`client connected: ${socket.id}`);
   //SocketUserList[socket.id] = new SocketConnection(socket.id);
 
-  socket.on("room:join", (payload, ack) => {
+  socket.on("room:join", async (payload, ack) => {
     if (typeof ack !== "function") return;
     const room = payload?.room;
     const role = payload?.role;
@@ -113,6 +124,16 @@ io.on("connection", (socket) => {
     if (role !== "source" && role !== "viewer") {
       return ack({ ok: false, error: "Invalid role" });
     }
+
+    // Checked on each join because the session can end while the socket stays open
+    const user = await GetInfo(socket.data.sid);
+    if (!user) return ack({ ok: false, error: "Not authenticated" });
+    if (role === "source" && (user.role !== "Teacher" || !await IsRoomLecturer(room, socket.data.sid))) {
+      return ack({ ok: false, error: "Only the teacher assigned to this class can start its stream" });
+    }
+
+    // The socket may have dropped during the lookup, and joining now would leave a dead node in the tree
+    if (!socket.connected) return;
 
     const error = rooms.Join(socket.id, room, role);
     ack(error ? { ok: false, error } : { ok: true, nodeId: socket.id });
@@ -133,10 +154,15 @@ io.on("connection", (socket) => {
     rooms.GetRoom(socket.id)?.SetStatus(socket.id, payload.status);
   });
 
-  // Debug page. TODO: restrict to admins once auth exists; this exposes every socket id in the room.
-  socket.on("room:watch", (payload) => {
+  // Debug page, limited to admins because this exposes every socket id in the room.
+  socket.on("room:watch", async (payload) => {
     const room = payload?.room;
     if (typeof room !== "string" || room.length === 0 || room.length > 64) return;
+
+    const user = await GetInfo(socket.data.sid);
+    if (user?.role !== "Administrator" && user?.role !== "Super") return;
+    if (!socket.connected) return;
+
     socket.join(rooms.WatchChannel(room));
     socket.emit("room:tree", rooms.GetTree(room));
   });

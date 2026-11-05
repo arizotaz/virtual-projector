@@ -1,10 +1,16 @@
 import express from "express";
 import cookieParser from "cookie-parser";
+import cors from "cors";
 import { GetInfo, Login, Logout, SESSION_TTL_MS } from "./utils";
 
 const PORT = Number(process.env.PORT ?? 3000);
 
 const app = express();
+
+// npm sets this to the script name, so it's only "dev" under `npm run dev`
+if (process.env.npm_lifecycle_event === "dev") {
+    app.use(cors({ origin: true, credentials: true }));
+}
 
 app.use(express.urlencoded({ extended: true })); // handle url-encoding
 app.use(express.json()); // handle JSON

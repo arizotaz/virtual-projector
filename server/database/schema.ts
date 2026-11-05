@@ -74,3 +74,19 @@ export const sessions = mysqlTable('sessions', {
     expiration: timestamp('expiration').notNull(),
     ipAddress: varchar('ipAddress', { length: 40 }),
 });
+
+export const classUrls = mysqlTable('urls', {
+    department: varchar('department', { length: 6 }).notNull(),
+    classname: varchar('classname', { length: 24 }).notNull(),
+    crn: varchar('crn', { length: 32 }).notNull(),
+    sectionid: varchar('sectionid', { length: 5 }).notNull(),
+}, (t) => [
+    primaryKey({ columns: [t.department, t.classname] }),
+    foreignKey({
+        name: 'FK_urls_sections',
+        columns: [t.crn, t.sectionid],
+        foreignColumns: [sections.crn, sections.sectionid],
+    })
+        .onDelete('cascade')
+        .onUpdate('cascade'),
+]);

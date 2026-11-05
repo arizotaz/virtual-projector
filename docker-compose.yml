@@ -34,7 +34,6 @@ services:
     # execute after the dockerfile has been parsed so the env variables are present
     command: >
       sh -c "
-        npm run db:generate &&
         npm run db:migrate &&
         npm run db:init
       "

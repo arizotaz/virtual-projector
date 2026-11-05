@@ -8,3 +8,4 @@ RUN npm install
 
 COPY ./drizzle.config.ts better_migration.ts /app
 COPY ./server/database/ /app/server/database
+COPY ./drizzle/ /app/drizzle

@@ -1,4 +1,4 @@
--- Admin panel procedures. Safe to re-run. Apply after auth.sql:
+-- Admin panel procedures. Safe to re-run. Apply after auth.sql and classes.sql:
 --   mariadb --default-character-set=utf8mb4 -h <host> -u <user> -p <database> < server/db/admin.sql
 --
 -- Every procedure takes the caller's session and checks it itself. Passwords arrive already hashed.
@@ -28,12 +28,11 @@ FROM users u;
 CREATE OR REPLACE VIEW admin_sections AS
 SELECT s.crn, c.name AS class_name, s.sectionid, s.lecturer,
 	CONCAT_WS(' ', t.first_name, t.middle_initial, t.last_name) AS lecturer_name,
-	l.department, l.classname,
+	s.department, s.shorthand,
 	(SELECT COUNT(*) FROM enrollments e WHERE e.crn = s.crn AND e.sectionid = s.sectionid) AS student_count
 FROM sections s
 JOIN classes c ON c.crn = s.crn
-JOIN users t ON t.id = s.lecturer
-LEFT JOIN urls l ON l.crn = s.crn AND l.sectionid = s.sectionid;
+JOIN users t ON t.id = s.lecturer;
 
 DELIMITER //
 
@@ -435,6 +434,9 @@ BEGIN
 	IF TRIM(IFNULL(p_crn, '')) = '' OR TRIM(IFNULL(p_name, '')) = '' THEN
 		SIGNAL SQLSTATE '45400' SET MESSAGE_TEXT = 'CRN and name are required';
 	END IF;
+	IF TRIM(p_crn) NOT REGEXP '^[A-Za-z]' THEN
+		SIGNAL SQLSTATE '45400' SET MESSAGE_TEXT = 'A CRN must start with its department letters, like CS63005';
+	END IF;
 
 	INSERT INTO classes (crn, name) VALUES (TRIM(p_crn), TRIM(p_name));
 END //
@@ -460,7 +462,7 @@ BEGIN
 	UPDATE classes SET name = TRIM(p_name) WHERE crn = p_crn;
 END //
 
--- Its sections, enrollments and URLs go with it
+-- Its sections and enrollments go with it
 CREATE OR REPLACE PROCEDURE `admin.class.delete`(
 	IN p_sessionID  varchar(256),
 	IN p_sessionKey varchar(512),
@@ -548,29 +550,24 @@ BEGIN
 	UPDATE sections SET lecturer = p_lecturer WHERE crn = p_crn AND sectionid = p_sectionid;
 END //
 
--- Sets the /c/{department}/{classname} address of a section. Both blank removes it.
-CREATE OR REPLACE PROCEDURE `admin.section.setUrl`(
+-- Replaced by shorthands on the section
+DROP PROCEDURE IF EXISTS `admin.section.setUrl` //
+
+-- Whether a section could use this shorthand, checked as an admin types it.
+-- status is available, current (already this section's), taken or invalid.
+CREATE OR REPLACE PROCEDURE `admin.section.shorthandStatus`(
 	IN p_sessionID  varchar(256),
 	IN p_sessionKey varchar(512),
 	IN p_crn        varchar(32),
 	IN p_sectionid  varchar(5),
-	IN p_department varchar(6),
-	IN p_classname  varchar(24)
+	IN p_shorthand  varchar(255)
 )
 BEGIN
-	DECLARE v_actor UUID;
-	DECLARE v_level INT;
-
-	DECLARE EXIT HANDLER FOR 1062
-	BEGIN
-		ROLLBACK;
-		SIGNAL SQLSTATE '45409' SET MESSAGE_TEXT = 'Another section already uses that address';
-	END;
-	DECLARE EXIT HANDLER FOR SQLEXCEPTION
-	BEGIN
-		ROLLBACK;
-		RESIGNAL;
-	END;
+	DECLARE v_actor      UUID;
+	DECLARE v_level      INT;
+	DECLARE v_department varchar(32);
+	DECLARE v_current    varchar(32);
+	DECLARE v_taken_by   varchar(600) DEFAULT NULL;
 
 	CALL `admin.authorize`(p_sessionID, p_sessionKey, v_actor, v_level);
 
@@ -578,19 +575,58 @@ BEGIN
 		SIGNAL SQLSTATE '45404' SET MESSAGE_TEXT = 'Section not found';
 	END IF;
 
-	START TRANSACTION;
-	DELETE FROM urls WHERE crn = p_crn AND sectionid = p_sectionid;
-	IF IFNULL(p_department, '') <> '' OR IFNULL(p_classname, '') <> '' THEN
-		IF IFNULL(p_department, '') NOT REGEXP '^[A-Za-z0-9_-]+$' OR IFNULL(p_classname, '') NOT REGEXP '^[A-Za-z0-9_-]+$' THEN
-			SIGNAL SQLSTATE '45400' SET MESSAGE_TEXT = 'Department and class name can only use letters, numbers, - and _';
-		END IF;
-		INSERT INTO urls (department, classname, crn, sectionid)
-		VALUES (p_department, p_classname, p_crn, p_sectionid);
+	SELECT department, shorthand INTO v_department, v_current
+	  FROM sections WHERE crn = p_crn AND sectionid = p_sectionid;
+
+	SELECT CONCAT(c.name, ' (', s.crn, ') section ', s.sectionid) INTO v_taken_by
+	  FROM sections s JOIN classes c ON c.crn = s.crn
+	 WHERE s.department = v_department AND s.shorthand = p_shorthand
+	   AND NOT (s.crn = p_crn AND s.sectionid = p_sectionid)
+	 LIMIT 1;
+
+	IF IFNULL(p_shorthand, '') NOT REGEXP '^[A-Za-z0-9_-]+$' THEN
+		SELECT 'invalid' AS status, 'Only letters, numbers, - and _ are allowed' AS message;
+	ELSEIF CHAR_LENGTH(p_shorthand) > 32 THEN
+		SELECT 'invalid' AS status, 'Must be 32 characters or fewer' AS message;
+	ELSEIF v_taken_by IS NOT NULL THEN
+		SELECT 'taken' AS status, CONCAT('Already used in ', v_department, ' by ', v_taken_by) AS message;
+	ELSEIF p_shorthand = v_current THEN
+		SELECT 'current' AS status, 'This is the current address' AS message;
+	ELSE
+		SELECT 'available' AS status, CONCAT('Available in ', v_department) AS message;
 	END IF;
-	COMMIT;
 END //
 
--- Its enrollments and URL go with it
+-- Blank removes the address. The unique key settles who gets a name if two admins save at once.
+CREATE OR REPLACE PROCEDURE `admin.section.setShorthand`(
+	IN p_sessionID  varchar(256),
+	IN p_sessionKey varchar(512),
+	IN p_crn        varchar(32),
+	IN p_sectionid  varchar(5),
+	IN p_shorthand  varchar(32)
+)
+BEGIN
+	DECLARE v_actor UUID;
+	DECLARE v_level INT;
+
+	DECLARE EXIT HANDLER FOR 1062
+		SIGNAL SQLSTATE '45409' SET MESSAGE_TEXT = 'That shorthand is already used in this department';
+
+	CALL `admin.authorize`(p_sessionID, p_sessionKey, v_actor, v_level);
+
+	IF NOT EXISTS (SELECT 1 FROM sections WHERE crn = p_crn AND sectionid = p_sectionid) THEN
+		SIGNAL SQLSTATE '45404' SET MESSAGE_TEXT = 'Section not found';
+	END IF;
+	IF IFNULL(p_shorthand, '') <> '' AND p_shorthand NOT REGEXP '^[A-Za-z0-9_-]+$' THEN
+		SIGNAL SQLSTATE '45400' SET MESSAGE_TEXT = 'Only letters, numbers, - and _ are allowed';
+	END IF;
+
+	UPDATE sections
+	   SET shorthand = NULLIF(p_shorthand, '')
+	 WHERE crn = p_crn AND sectionid = p_sectionid;
+END //
+
+-- Its enrollments and shorthand go with it
 CREATE OR REPLACE PROCEDURE `admin.section.delete`(
 	IN p_sessionID  varchar(256),
 	IN p_sessionKey varchar(512),

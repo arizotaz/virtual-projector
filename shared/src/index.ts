@@ -53,9 +53,27 @@ export interface AdminSection {
   sectionid: string;
   lecturer: string;
   lecturer_name: string;
-  department: string | null;
-  classname: string | null;
+  department: string;
+  shorthand: string | null;
   student_count: number;
+}
+
+/** Whether a section could use a shorthand. "current" means it already does. */
+export interface ShorthandStatus {
+  /** The shorthand this answer is for, so an out of date answer can be ignored */
+  name: string;
+  status: "available" | "current" | "taken" | "invalid";
+  message: string;
+}
+
+/** The class at /c/{department}/{shorthand} */
+export interface ClassInfo {
+  crn: string;
+  class_name: string;
+  sectionid: string;
+  department: string;
+  shorthand: string;
+  lecturer_name: string;
 }
 
 /** Max number of downstream peers a single relay node forwards to */

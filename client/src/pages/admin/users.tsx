@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { STUDENT_ROLE_ID, TEACHER_ROLE_ID, type AdminSection, type AdminUser, type Role } from "@virtual-projector/shared";
-import { ActionResult, AdminRequest, FullName, useAction, useAdminData, useDebounced } from "./common";
+import { ActionResult, AdminRequest, ClassAddress, FullName, useAction, useAdminData, useDebounced } from "./common";
 import styles from "./admin.module.css";
 
 interface UserListProps {
@@ -274,7 +274,7 @@ let EnrollmentsSection = ({ user }: { user: AdminUser }) => {
                             <tr key={`${section.crn}/${section.sectionid}`}>
                                 <td><SectionLink section={section} /></td>
                                 <td><Link to={`/admin/teacher/${section.lecturer}`}>{section.lecturer_name}</Link></td>
-                                <td>{section.department ? `/c/${section.department}/${section.classname}` : "None"}</td>
+                                <td>{ClassAddress(section) ?? "None"}</td>
                                 <td><button onClick={() => unenroll(section)}>Remove</button></td>
                             </tr>
                         ))}

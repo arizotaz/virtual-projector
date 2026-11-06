@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { STUDENT_ROLE_ID, TEACHER_ROLE_ID, type AdminClass, type AdminSection, type AdminUser } from "@virtual-projector/shared";
-import { ActionResult, AdminRequest, FullName, useAction, useAdminData, useDebounced } from "./common";
+import { STUDENT_ROLE_ID, TEACHER_ROLE_ID, type AdminClass, type AdminSection, type AdminUser, type ShorthandStatus } from "@virtual-projector/shared";
+import { ActionResult, AdminRequest, ClassAddress, FullName, useAction, useAdminData, useDebounced } from "./common";
 import styles from "./admin.module.css";
 
 let ClassPath = (crn: string) => `/classes/${encodeURIComponent(crn)}`;
@@ -139,7 +139,7 @@ let AdminClassDetail = () => {
                                     </Link>
                                 </td>
                                 <td><Link to={`/admin/teacher/${section.lecturer}`}>{section.lecturer_name}</Link></td>
-                                <td>{section.department ? `/c/${section.department}/${section.classname}` : "None"}</td>
+                                <td>{ClassAddress(section) ?? "None"}</td>
                                 <td>{section.student_count}</td>
                             </tr>
                         ))}
@@ -183,22 +183,10 @@ let AdminSectionDetail = () => {
         if (await run(() => AdminRequest(`${path}/teacher`, "PUT", { lecturer: teacher }), "Teacher saved")) reload();
     };
 
-    const handleUrl = async (e: React.SubmitEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        const form = new FormData(e.currentTarget);
-        const saved = await run(() => AdminRequest(`${path}/url`, "PUT", {
-            department: form.get("department"),
-            classname: form.get("classname"),
-        }), "Address saved");
-        if (saved) reload();
-    };
-
     const handleDelete = async () => {
         if (!window.confirm(`Permanently delete section ${sectionid} and its enrollments?`)) return;
         if (await run(() => AdminRequest(path, "DELETE"))) navigate(`/admin/class/${encodeURIComponent(crn)}`);
     };
-
-    const address = section.department ? `/c/${section.department}/${section.classname}` : null;
 
     return (
         <>
@@ -211,19 +199,78 @@ let AdminSectionDetail = () => {
                 <button type="submit">Save Teacher</button>
             </form>
 
-            <h2>Class Address</h2>
-            <p>{address ? <Link to={address}>{address}</Link> : "No address yet. Leave both blank to remove one."}</p>
-            <form key={address} className={styles.form} onSubmit={handleUrl}>
-                <label>Department <input name="department" defaultValue={section.department ?? ""} maxLength={6} /></label>
-                <label>Class name <input name="classname" defaultValue={section.classname ?? ""} maxLength={24} /></label>
-                <button type="submit">Save Address</button>
-            </form>
             <ActionResult error={error} notice={notice} />
+
+            <ShorthandSection section={section} path={path} onChange={reload} />
 
             <RosterSection path={path} onChange={reload} />
 
             <h2>Delete Section</h2>
             <button onClick={handleDelete}>Delete Section</button>
+        </>
+    );
+}
+
+/** Picks the section's /c/{department}/{shorthand} address, checking availability as it's typed */
+let ShorthandSection = ({ section, path, onChange }: { section: AdminSection; path: string; onChange: () => void }) => {
+    const saved = section.shorthand ?? "";
+    const [value, setValue] = useState(saved);
+    const [status, setStatus] = useState<ShorthandStatus | null>(null);
+    const [checkError, setCheckError] = useState<string | null>(null);
+    const { run, error, notice } = useAction();
+
+    useEffect(() => {
+        setStatus(null);
+        setCheckError(null);
+        if (value === "") return;
+
+        const controller = new AbortController();
+        AdminRequest<ShorthandStatus>(
+            `${path}/shorthand-status?name=${encodeURIComponent(value)}`, "GET", undefined, controller.signal,
+        )
+            .then(setStatus)
+            .catch((e: Error) => {
+                if (!controller.signal.aborted) setCheckError(e.message);
+            });
+        return () => controller.abort();
+    }, [value, path, saved]);
+
+    // Only trust an answer about what's in the box right now
+    const current = status?.name === value ? status : null;
+    const canSave = value === ""
+        ? saved !== ""
+        : value !== saved && (current?.status === "available" || current?.status === "current");
+
+    const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        if (!canSave) return;
+        const notice = value === "" ? "Address removed" : "Address saved";
+        if (await run(() => AdminRequest(`${path}/shorthand`, "PUT", { shorthand: value }), notice)) onChange();
+    };
+
+    const address = ClassAddress(section);
+    const good = current?.status === "available" || current?.status === "current";
+
+    return (
+        <>
+            <h2>Class Address</h2>
+            <p>{address ? <>Currently <Link to={address}>{address}</Link></> : "No address yet."}</p>
+            <form className={styles.form} onSubmit={handleSubmit}>
+                <label>
+                    Shorthand
+                    <input value={value} onChange={(e) => setValue(e.target.value)} maxLength={64} autoComplete="off" spellCheck={false} />
+                </label>
+                <button type="submit" disabled={!canSave}>Save Address</button>
+            </form>
+            <p>/c/{section.department}/{value}</p>
+            <p role="status" className={good ? styles.notice : current ? styles.error : undefined}>
+                {value === ""
+                    ? saved && "Saving this blank removes the address."
+                    : checkError
+                        ? <span className={styles.error}>{checkError}</span>
+                        : current?.message ?? "Checking…"}
+            </p>
+            <ActionResult error={error} notice={notice} />
         </>
     );
 }

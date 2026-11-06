@@ -1,5 +1,5 @@
 import { Router, type Request, type Response } from "express";
-import type { AdminClass, AdminSection, AdminStats, AdminUser, Role } from "@virtual-projector/shared";
+import type { AdminClass, AdminSection, AdminStats, AdminUser, Role, ShorthandStatus } from "@virtual-projector/shared";
 import { HashPassword, RequireAdmin, RequireSession, type ActiveSession } from "./auth";
 import { CallProcedure, ProcedureError } from "./db";
 
@@ -194,8 +194,14 @@ router.put("/classes/:crn/sections/:sectionid/teacher", async (req, res) => {
   Reply(res);
 });
 
-router.put("/classes/:crn/sections/:sectionid/url", async (req, res) => {
-  await Call(res, "admin.section.setUrl", ...SectionKey(req), Text(req.body?.department), Text(req.body?.classname));
+router.get("/classes/:crn/sections/:sectionid/shorthand-status", async (req, res) => {
+  const name = typeof req.query.name === "string" ? req.query.name : "";
+  const [result] = await Call<Omit<ShorthandStatus, "name">>(res, "admin.section.shorthandStatus", ...SectionKey(req), name);
+  Reply(res, { name, ...result });
+});
+
+router.put("/classes/:crn/sections/:sectionid/shorthand", async (req, res) => {
+  await Call(res, "admin.section.setShorthand", ...SectionKey(req), Text(req.body?.shorthand));
   Reply(res);
 });
 

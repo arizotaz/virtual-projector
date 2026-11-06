@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import type { AdminUser } from "@virtual-projector/shared";
+import type { AdminSection, AdminUser } from "@virtual-projector/shared";
 import { GetBackendStr } from "../../utilities/browser_utils";
 import styles from "./admin.module.css";
 
@@ -79,6 +79,11 @@ export function useDebounced<T>(value: T, delayMs = 250) {
         return () => clearTimeout(timer);
     }, [value, delayMs]);
     return debounced;
+}
+
+/** Where a section's class page is, or null if it has no shorthand yet */
+export function ClassAddress(section: Pick<AdminSection, "department" | "shorthand">) {
+    return section.shorthand ? `/c/${section.department}/${section.shorthand}` : null;
 }
 
 export function FullName(user: Pick<AdminUser, "first_name" | "middle_initial" | "last_name">) {

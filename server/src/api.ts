@@ -10,7 +10,8 @@ import {
   type ActiveSession,
 } from "./auth";
 import adminRouter from "./admin";
-import { ProcedureError } from "./db";
+import { CallProcedure, ProcedureError } from "./db";
+import type { ClassInfo } from "@virtual-projector/shared";
 
 const router = Router()
 
@@ -73,6 +74,20 @@ router.post("/logout", async (req, res) => {
 router.get("/session", RequireSession, (_req, res) => {
   const session: ActiveSession = res.locals.session;
   res.json({ ok: true, user: session.user });
+});
+
+/**
+ * Finds the class at /c/{department}/{shorthand}
+ */
+router.get("/classes/:department/:shorthand", RequireSession, async (req, res) => {
+  const session: ActiveSession = res.locals.session;
+  const [found] = await CallProcedure<ClassInfo>("class.find", [
+    session.id,
+    session.keyHash,
+    req.params.department,
+    req.params.shorthand,
+  ]);
+  res.json({ ok: true, class: found });
 });
 
 router.use("/admin", adminRouter);

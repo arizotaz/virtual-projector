@@ -48,9 +48,13 @@ Login sets two `HttpOnly` cookies: `sessionID` (256 characters, stored as is) an
 
 ## Admin panel
 
-The panel is at `/admin`, for users with the Administrator or Super role. Its API is in `server/src/admin.ts` and its procedures are in `server/db/admin.sql`; apply that after `auth.sql`.
+The panel is at `/admin`, for users with the Administrator or Super role. Its API is in `server/src/admin.ts` and its procedures are in `server/db/admin.sql`; apply `auth.sql`, then `classes.sql`, then `admin.sql`.
 
 Each `admin.*` procedure takes the caller's session and checks their permissions itself. A failure is raised with `SIGNAL`: the last three digits of a `45xxx` SQLSTATE are the HTTP status, and the message is shown to the admin.
+
+## Class addresses
+
+A section's class page is `/c/{department}/{shorthand}`. The department is the letters at the start of the CRN (`CS63005` is `CS`). The shorthand is chosen per section, and must be unique within its department, ignoring case. See `server/db/classes.sql`.
 
 ## Socket.IO events
 

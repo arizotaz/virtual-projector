@@ -14,12 +14,10 @@ const ADMIN_ROLES = new Set(["administrator", "super"]);
 function AdminGuard({ user }: { user: UserData | undefined | null }) {
     const access = CheckAccess(user, ADMIN_ROLES);
 
-    /*
     if (access === "unauthenticated")
         return <Navigate to="/login" replace />;
     else if (access === "forbidden")
         return <Navigate to="/" replace />;
-    */
 
     return <Outlet />;
 }

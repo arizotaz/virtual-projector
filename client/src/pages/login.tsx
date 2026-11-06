@@ -8,6 +8,11 @@ export default function Login() {
             const form = new FormData(e.currentTarget);
             const email = form.get("email");
             const password = form.get("password");
+
+
+
+
+            
     
             const endpoint = GetBackendStr("/login");
             const response = await fetch(endpoint, {
@@ -21,14 +26,6 @@ export default function Login() {
                     "password": password,
                 }),
             });
-    
-            const result = await response.json();
-    
-            if (result.success) {
-                console.log("[+] Login Successful")
-            } else {
-                console.error("[-] Login Failed: Incorrect email or password!")
-            }
         } catch (e) {
             console.error("[-] Login Failed:", e);
         }

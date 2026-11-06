@@ -5,7 +5,6 @@ import { fileURLToPath } from "node:url";
 import express from "express";
 import { Server } from "socket.io";
 import type { ClientToServerEvents, ServerToClientEvents } from "@virtual-projector/shared";
-import { SocketConnection } from "./socket";
 import { RoomManager } from "./rooms";
 
 const PORT = Number(process.env.PORT ?? 3000);
@@ -14,9 +13,10 @@ const app = express();
 const httpServer = createServer(app);
 const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer);
 
-app.get("/api/health", (_req, res) => {
-  res.json({ ok: true });
-});
+
+import apiRouter from "./api"
+app.use('/api', apiRouter);
+
 
 // In production, serve the built React app.
 const clientDist = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../client/dist");

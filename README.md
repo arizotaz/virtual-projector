@@ -32,6 +32,20 @@ Open http://localhost:5173. The Vite dev server hot-reloads the React app and pr
 
 Add a dependency to one package with `npm install <pkg> -w client` (or `-w server`).
 
+## Login and sessions
+
+The server reads `DB_*` from the root `.env` in development. The procedures are in `server/db/auth.sql`; apply it to a database with `mariadb -h <host> -u <user> -p <database> < server/db/auth.sql`.
+
+A user can only log in once they have a row in `accounts`. `npm run seed:admin -w server` creates one for the existing `ADMIN_EMAIL` user with the `ADMIN_PASSWORD` value in `.env`.
+
+| Route               | Does                                                    |
+| ------------------- | ------------------------------------------------------- |
+| `POST /api/login`   | Takes `{ email, password }`, sets the session cookies   |
+| `POST /api/logout`  | Deletes the session and clears the cookies              |
+| `GET /api/session`  | Returns the logged in user, or 401                      |
+
+Login sets two `HttpOnly` cookies: `sessionID` (256 characters, stored as is) and `sessionKey` (stored as a SHA-256 hash). Protect a route by adding the `RequireSession` middleware from `server/src/auth.ts`, which puts the session on `res.locals.session`. Its `id` and `keyHash` are the values to pass to procedures that take a session.
+
 ## Socket.IO events
 
 Define events in `shared/src/index.ts`. Both `server/src/index.ts` and `client/src/socket.ts` are typed against those interfaces, so a mismatched event name or payload is a compile error.

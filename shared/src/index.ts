@@ -1,5 +1,14 @@
 // Types shared between the server and the client
 
+/** The logged in user, as returned by /api/login and /api/session */
+export interface AuthUser {
+  id: string;
+  name: string;
+  initial: string;
+  email: string;
+  roles: { id: number; name: string }[];
+}
+
 /** Max number of downstream peers a single relay node forwards to */
 export const RELAY_MAX_CHILDREN = 3;
 

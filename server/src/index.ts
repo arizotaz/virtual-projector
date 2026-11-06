@@ -13,6 +13,9 @@ const app = express();
 const httpServer = createServer(app);
 const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer);
 
+// nginx runs on the same machine; trust it for the client's IP and HTTP/HTTPS scheme
+app.set("trust proxy", "loopback");
+
 
 import apiRouter from "./api"
 app.use('/api', apiRouter);

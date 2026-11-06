@@ -9,6 +9,8 @@ import {
   SESSION_LIFETIME_SECONDS,
   type ActiveSession,
 } from "./auth";
+import adminRouter from "./admin";
+import { ProcedureError } from "./db";
 
 const router = Router()
 
@@ -73,11 +75,14 @@ router.get("/session", RequireSession, (_req, res) => {
   res.json({ ok: true, user: session.user });
 });
 
+router.use("/admin", adminRouter);
+
 // Malformed requests keep their status; anything else is logged here and not sent to the client
 router.use((err: Error & { status?: number }, _req: Request, res: Response, _next: NextFunction) => {
   const status = err.status ?? 500;
   if (status >= 500) console.error("[api]", err);
-  res.status(status).json({ ok: false, error: status >= 500 ? "Server error" : "Bad request" });
+  const message = err instanceof ProcedureError ? err.message : status >= 500 ? "Server error" : "Bad request";
+  res.status(status).json({ ok: false, error: message });
 });
 
 

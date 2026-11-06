@@ -9,6 +9,55 @@ export interface AuthUser {
   roles: { id: number; name: string }[];
 }
 
+/** Role ids also rank permissions: a higher id can do everything a lower one can */
+export const STUDENT_ROLE_ID = 1;
+export const TEACHER_ROLE_ID = 2;
+export const ADMIN_ROLE_ID = 3;
+
+export interface Role {
+  id: number;
+  name: string;
+}
+
+export interface AdminStats {
+  users: number;
+  students: number;
+  teachers: number;
+  users_without_account: number;
+  classes: number;
+  sections: number;
+  enrollments: number;
+}
+
+/** A user as the admin panel sees them */
+export interface AdminUser {
+  id: string;
+  first_name: string;
+  middle_initial: string | null;
+  last_name: string | null;
+  email: string;
+  has_account: boolean;
+  roles: Role[];
+}
+
+export interface AdminClass {
+  crn: string;
+  name: string;
+  section_count: number;
+  student_count: number;
+}
+
+export interface AdminSection {
+  crn: string;
+  class_name: string;
+  sectionid: string;
+  lecturer: string;
+  lecturer_name: string;
+  department: string | null;
+  classname: string | null;
+  student_count: number;
+}
+
 /** Max number of downstream peers a single relay node forwards to */
 export const RELAY_MAX_CHILDREN = 3;
 

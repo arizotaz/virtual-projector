@@ -46,6 +46,12 @@ A user can only log in once they have a row in `accounts`. `npm run seed:admin -
 
 Login sets two `HttpOnly` cookies: `sessionID` (256 characters, stored as is) and `sessionKey` (stored as a SHA-256 hash). Protect a route by adding the `RequireSession` middleware from `server/src/auth.ts`, which puts the session on `res.locals.session`. Its `id` and `keyHash` are the values to pass to procedures that take a session.
 
+## Admin panel
+
+The panel is at `/admin`, for users with the Administrator or Super role. Its API is in `server/src/admin.ts` and its procedures are in `server/db/admin.sql`; apply that after `auth.sql`.
+
+Each `admin.*` procedure takes the caller's session and checks their permissions itself. A failure is raised with `SIGNAL`: the last three digits of a `45xxx` SQLSTATE are the HTTP status, and the message is shown to the admin.
+
 ## Socket.IO events
 
 Define events in `shared/src/index.ts`. Both `server/src/index.ts` and `client/src/socket.ts` are typed against those interfaces, so a mismatched event name or payload is a compile error.

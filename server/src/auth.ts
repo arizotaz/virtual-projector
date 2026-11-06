@@ -1,6 +1,6 @@
 import { createHash, randomBytes, scrypt, timingSafeEqual, type ScryptOptions } from "node:crypto";
 import type { NextFunction, Request, Response } from "express";
-import type { AuthUser } from "@virtual-projector/shared";
+import { ADMIN_ROLE_ID, type AuthUser } from "@virtual-projector/shared";
 import { CallProcedure } from "./db";
 
 export const SESSION_ID_COOKIE = "sessionID";
@@ -141,4 +141,14 @@ export async function RequireSession(req: Request, res: Response, next: NextFunc
   }
 
   res.status(401).json({ ok: false, error: "Not logged in" });
+}
+
+/**
+ * Middleware for admin routes, used after RequireSession. The admin procedures check this
+ * themselves too; this just rejects non-admins before any work, such as hashing a password.
+ */
+export function RequireAdmin(_req: Request, res: Response, next: NextFunction) {
+  const session: ActiveSession = res.locals.session;
+  if (session.user.roles.some((role) => role.id >= ADMIN_ROLE_ID)) return next();
+  res.status(403).json({ ok: false, error: "Permission denied" });
 }

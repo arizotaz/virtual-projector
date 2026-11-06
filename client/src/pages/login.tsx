@@ -1,19 +1,21 @@
+import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 
 import { GetBackendStr } from "../utilities/browser_utils";
 import Feedback from '../components/feedback';
 
 export default function Login() {
+    const navigate = useNavigate();
+    
     const [success, SetSuccess] = useState(false);
     const [msg, SetMsg] = useState<string|undefined|null>("");
+    
+    const [email, SetEmail] = useState<string>("");
+    const [password, SetPassword] = useState<string>("");
 
     const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
         try {
             e.preventDefault();
-
-            const form = new FormData(e.currentTarget);
-            const email = form.get("email");
-            const password = form.get("password");
     
             const endpoint = GetBackendStr("/login");
             const response = await fetch(endpoint, {
@@ -36,13 +38,18 @@ export default function Login() {
             // clear feedback after some time
             setTimeout(() => {
                 SetMsg(null);
-                window.location.reload();
             }, result.success ? 1000 : 3000);
     
             if (result.success) {
                 console.log("[+] Login Successful")
+                SetEmail("");
+                SetPassword("");
+
+                // handle navigation in near future
+                // navigate("/go_here_plz")
             } else {
                 console.error("[-] Login Failed: Incorrect email or password!")
+                SetPassword("");
             }
         } catch (e) {
             console.error("[-] Login Failed:", e);
@@ -100,6 +107,8 @@ export default function Login() {
                         name="email"
                         type="email"
                         placeholder="you@example.com"
+                        value={email}
+                        onChange={(e) => SetEmail(e.target.value)}
                         required
                         style={{
                             width: "100%",
@@ -128,6 +137,8 @@ export default function Login() {
                         name="password"
                         type="password"
                         placeholder="Password"
+                        value={password}
+                        onChange={(e) => SetPassword(e.target.value)}
                         required
                         style={{
                             width: "100%",

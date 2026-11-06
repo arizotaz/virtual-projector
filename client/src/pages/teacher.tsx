@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
+
 import ClassView, { Class } from "../components/ClassView";
 
 import "../teacher.css";
@@ -8,6 +10,7 @@ import Feedback from '../components/feedback';
 const TEACHER_ROLES = new Set(["teacher"]);
 
 export default function Teacher({ user }: { user: UserData | undefined | null }) {
+    const navigate = useNavigate();
     const access = CheckAccess(user, TEACHER_ROLES);
 
     const [success, SetSuccess] = useState(false);
@@ -26,8 +29,10 @@ export default function Teacher({ user }: { user: UserData | undefined | null })
     }, []);
 
     useEffect(() => {
-        if (access === "unauthenticated") window.location.replace("/login");
-        else if (access === "forbidden") window.location.replace("/");
+        if (access === "unauthenticated") 
+            navigate('/login');
+        else if (access === "forbidden")
+            navigate('/');
     }, [access]);
 
     useEffect(() => {

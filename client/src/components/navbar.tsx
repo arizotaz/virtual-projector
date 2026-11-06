@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import { GetBackendStr, UserData } from "../utilities/browser_utils";
 
@@ -16,6 +17,7 @@ const ROLE_HOME: Record<string, string> = {
 };
 
 export default function Navbar({ user }: { user: UserData | undefined | null }) {
+    const navigate = useNavigate();
     // if user can be resolved => valid sid cookie and session can find them in DB
 
     async function handleLogout() {
@@ -23,7 +25,7 @@ export default function Navbar({ user }: { user: UserData | undefined | null }) 
         await fetch(endpoint, {
             credentials: "include",
         });
-        window.location.reload();
+        navigate('/');
     }
 
     useEffect(() => {

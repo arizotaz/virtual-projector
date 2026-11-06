@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import type { RelayTree } from "@virtual-projector/shared";
 import { socket } from "../socket";
 import RelayTreeView, { TreeDepth } from "../components/relayTree";
@@ -16,13 +16,13 @@ const STATUS_TEXT: Record<RelayStatus, string> = {
     error: "Error",
 };
 
-let WebRTCHostPage = () => {
+const HOST_STOPPED_TEXT = "The host stopped the stream. Waiting for it to start again";
+
+/** Start/stop controls and preview for streaming the host's screen to a room */
+let HostStream = ({ room }: { room: string }) => {
     let streamRef = useRef<MediaStream | null>(null);
     let previewRef = useRef<HTMLVideoElement>(null)
     let fakeClientRef = useRef<RelayNode | null>(null);
-    let fakeClientDecoderRef = useRef<StreamDecoder | null>(null);
-
-    let clientRefFakeCanvas = useRef<HTMLCanvasElement>(null);
 
     let [status, setStatus] = useState<RelayStatus | null>(null);
     let [tree, setTree] = useState<RelayTree>(EMPTY_TREE);
@@ -32,42 +32,66 @@ let WebRTCHostPage = () => {
         streamRef.current = null;
         fakeClientRef.current?.Stop();
         fakeClientRef.current = null;
-        fakeClientDecoderRef.current?.Clear();
-        fakeClientDecoderRef.current?.Close();
-        fakeClientDecoderRef.current = null;
         if (previewRef.current) previewRef.current.srcObject = null;
         setStatus(null);
         setTree(EMPTY_TREE);
     }
 
-    let StartStream = async () => {
-        const stream = await navigator.mediaDevices.getDisplayMedia({
-            // Capped at 1080p/30: every relay uploads this to 3 children, and
-            // screen content gains more from sharp frames than from frame rate.
-            video: { frameRate: 60, width: { max: 3840 }, height: { max: 2160 } },
-            audio: false,
-        });
+    /** Opens the browser's screen/window picker. Returns null if the user cancels */
+    let PickScreen = async () => {
+        try {
+            return await navigator.mediaDevices.getDisplayMedia({
+                // Capped at 1080p/30: every relay uploads this to 3 children, and
+                // screen content gains more from sharp frames than from frame rate.
+                video: { frameRate: 60, width: { max: 3840 }, height: { max: 2160 } },
+                audio: false,
+            });
+        } catch (e) {
+            if ((e as Error).name !== "NotAllowedError") console.error("[-] Screen Capture Failed:", e);
+            return null;
+        }
+    }
+
+    let ShowPreview = (stream: MediaStream) => {
         streamRef.current = stream;
         previewRef.current!.srcObject = stream;
-        await previewRef.current!.play();
+        previewRef.current!.play().catch(() => {});
 
         // User hit the browser's own "Stop sharing" button.
         stream.getVideoTracks()[0]?.addEventListener("ended", StopStream);
+    }
+
+    let StartStream = async () => {
+        const stream = await PickScreen();
+        if (!stream) return;
+        ShowPreview(stream);
 
         // The fake client is the root of the relay tree. It runs the same
         // relay code as every viewer; its bytes just come from the one encoder
-        // instead of a parent. The preview below decodes exactly what it sends.
-        let fakeClient = new RelayNode(DEFAULT_ROOM, "source");
-        let decoder = new StreamDecoder(clientRefFakeCanvas.current!);
+        // instead of a parent.
+        let fakeClient = new RelayNode(room, "source");
         fakeClient.onStatus = (s) => setStatus(s);
         fakeClient.onTree = setTree;
-        fakeClient.onConfig = (c) => decoder.Configure(c);
-        fakeClient.onFrame = (f) => decoder.Decode(f);
-        decoder.onNeedKeyframe = () => fakeClient.RequestKeyframe();
-        fakeClientDecoderRef.current = decoder;
         fakeClientRef.current = fakeClient;
         fakeClient.Start();
         fakeClient.SetLocalStream(stream);
+    }
+
+    /** Switches to another screen or window. Viewers stay connected throughout */
+    let ChangeScreen = async () => {
+        const stream = await PickScreen();
+        if (!stream) return;
+
+        // Sharing ended while the picker was open
+        if (!fakeClientRef.current) {
+            stream.getTracks().forEach((t) => t.stop());
+            return;
+        }
+
+        const previous = streamRef.current;
+        ShowPreview(stream);
+        fakeClientRef.current.SetLocalStream(stream);
+        previous?.getTracks().forEach((t) => t.stop());
     }
 
     useEffect(() => StopStream, []);
@@ -76,14 +100,16 @@ let WebRTCHostPage = () => {
         <>
             <div className={`${styles.host}`}>
                 {status ? (
-                    <button onClick={StopStream}>Stop Stream</button>
+                    <>
+                        <button onClick={ChangeScreen}>Change Screen</button>
+                        {" "}
+                        <button onClick={StopStream}>Stop Stream</button>
+                    </>
                 ) : (
                     <button onClick={StartStream}>Start Stream</button>
                 )}
-                <span> Room: {DEFAULT_ROOM} {status && `· ${STATUS_TEXT[status]}`}</span>
+                <span> Room: {room} {status && `· ${STATUS_TEXT[status]}`}</span>
                 <video ref={previewRef} muted playsInline />
-                <br /><br />
-                <canvas ref={clientRefFakeCanvas} />
                 {tree.sourceId && (
                     <>
                         <h3>Relay tree ({tree.nodes.length - 1} viewers)</h3>
@@ -96,48 +122,114 @@ let WebRTCHostPage = () => {
     );
 }
 
-let WebRTCClientPage = () => {
+let WebRTCHostPage = () => <HostStream room={DEFAULT_ROOM} />;
+
+/** Watches a room's stream, and relays it on to this viewer's children */
+let ViewerStream = ({ room }: { room: string }) => {
     let canvasRef = useRef<HTMLCanvasElement>(null);
+    let pipVideoRef = useRef<HTMLVideoElement>(null);
+    let hadStreamRef = useRef(false);
     let [status, setStatus] = useState<RelayStatus>("connecting");
     let [error, setError] = useState<string | undefined>();
+    // Null until a picture is showing
+    let [pictureSize, setPictureSize] = useState<{ width: number; height: number } | null>(null);
+    let [pipReady, setPipReady] = useState(false);
+    let [inPip, setInPip] = useState(false);
 
     useEffect(() => {
         // Every viewer is also a relay, it forwards what it receives to its own children.
         // Forwarding never decodes, the decoder here is only so this viewer can watch.
-        let node = new RelayNode(DEFAULT_ROOM, "viewer");
+        let node = new RelayNode(room, "viewer");
         let decoder = new StreamDecoder(canvasRef.current!);
         node.onStatus = (s, detail) => {
+            if (s === "receiving") hadStreamRef.current = true;
             setStatus(s);
             setError(detail);
-            if (s === "waiting") decoder.Clear();
+            if (s === "waiting") {
+                decoder.Clear();
+                setPictureSize(null);
+            }
         };
         node.onConfig = (c) => decoder.Configure(c);
         node.onFrame = (f) => decoder.Decode(f);
         decoder.onNeedKeyframe = () => node.RequestKeyframe();
+        decoder.onPictureSize = (width, height) => setPictureSize({ width, height });
         decoder.onError = (e) => {
             setStatus("error");
             setError(e);
         };
+
+        // Browsers only offer picture-in-picture for a <video>, so a hidden one plays the decoder's output
+        let pipVideo = pipVideoRef.current!;
+        pipVideo.srcObject = decoder.CreateOutputStream();
+        pipVideo.play().catch(() => {});
+
+        // React has no props for these two events
+        let onEnterPip = () => setInPip(true);
+        let onLeavePip = () => setInPip(false);
+        pipVideo.addEventListener("enterpictureinpicture", onEnterPip);
+        pipVideo.addEventListener("leavepictureinpicture", onLeavePip);
+
         node.Start();
         return () => {
             node.Stop();
             decoder.Close();
+            pipVideo.srcObject = null;
+            pipVideo.removeEventListener("enterpictureinpicture", onEnterPip);
+            pipVideo.removeEventListener("leavepictureinpicture", onLeavePip);
         };
-    }, []);
+    }, [room]);
+
+    let TogglePip = async () => {
+        try {
+            if (document.pictureInPictureElement) await document.exitPictureInPicture();
+            else await pipVideoRef.current!.requestPictureInPicture();
+        } catch (e) {
+            console.error("[-] Picture-in-Picture Failed:", e);
+        }
+    };
+
+    let message = "";
+    if (status === "error") message = `Error: ${error}`;
+    else if (status === "waiting") message = hadStreamRef.current ? HOST_STOPPED_TEXT : STATUS_TEXT.waiting;
+    else if (status === "connecting" || !pictureSize) message = STATUS_TEXT.connecting;
+
+    // The box takes the stream's shape, so no background shows around the picture. 16:9 until there is one.
+    let playerStyle = { "--aspect": pictureSize ? pictureSize.width / pictureSize.height : 16 / 9 } as CSSProperties;
 
     return (
         <>
             <div className={`${styles.client}`}>
                 <div className={`${styles.container}`}>
-                    <canvas ref={canvasRef} />
-                </div>
-                <div className={`${styles.overlay}`}>
-                    {status === "error" ? `Error: ${error}` : STATUS_TEXT[status]}
+                    <div className={`${styles.player}`} style={playerStyle}>
+                        <canvas ref={canvasRef} />
+                        {message && <div className={`${styles.status}`}>{message}</div>}
+                        <video
+                            ref={pipVideoRef}
+                            className={`${styles.pipVideo}`}
+                            muted
+                            playsInline
+                            onLoadedMetadata={() => setPipReady(true)}
+                        />
+                        {document.pictureInPictureEnabled && !inPip && (
+                            <button className={`${styles.pipButton}`} onClick={TogglePip} disabled={!pipReady}>
+                                Picture-in-Picture
+                            </button>
+                        )}
+                        {inPip && (
+                            <div className={`${styles.pipOverlay}`}>
+                                <p>This stream is playing in Picture-in-Picture</p>
+                                <button onClick={TogglePip}>Return to Page</button>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
         </>
     );
 }
+
+let WebRTCClientPage = () => <ViewerStream room={DEFAULT_ROOM} />;
 
 let WebRTCDebugPage = () => {
     let [room, setRoom] = useState(DEFAULT_ROOM);
@@ -196,4 +288,4 @@ let WebRTCDebugPage = () => {
     );
 }
 
-export { WebRTCClientPage, WebRTCHostPage, WebRTCDebugPage }
+export { HostStream, ViewerStream, WebRTCClientPage, WebRTCHostPage, WebRTCDebugPage }

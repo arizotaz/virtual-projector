@@ -4,6 +4,7 @@ import { socket } from "../socket";
 import Navbar from "../components/navbar";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { GetBackendStr } from "../utilities/browser_utils";
+import { GetCurrentUser } from "../utilities/user";
 
 export default function Home() {
     const [user, setUser] = useState<AuthUser | null>(null);
@@ -11,21 +12,11 @@ export default function Home() {
     useEffect(() => {
         const controller = new AbortController();
 
-        const loadUser = async () => {
-            try {
-                const response = await fetch(GetBackendStr("/session"), {
-                    credentials: "include",
-                    signal: controller.signal,
-                });
-                if (!response.ok) return;
-
-                const data: { user: AuthUser } = await response.json();
-                setUser(data.user);
-            } catch (e) {
-                if (!controller.signal.aborted) console.error("[-] Session Check Failed:", e);
-            }
-        };
-        loadUser();
+        let LoadUser = async() => {
+            let usr = await GetCurrentUser(controller.signal);
+            if (!controller.signal.aborted) setUser(usr);
+        }
+        LoadUser();
 
         return () => controller.abort();
     }, []);

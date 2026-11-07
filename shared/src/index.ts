@@ -73,7 +73,10 @@ export interface ClassInfo {
   sectionid: string;
   department: string;
   shorthand: string;
-  lecturer_name: string;
+  /** Null for visitors who aren't logged in */
+  lecturer_name: string | null;
+  /** Whether this visitor gets the host page rather than the viewer */
+  can_host: boolean;
 }
 
 /** Max number of downstream peers a single relay node forwards to */

@@ -56,6 +56,16 @@ Each `admin.*` procedure takes the caller's session and checks their permissions
 
 A section's class page is `/c/{department}/{shorthand}`. The department is the letters at the start of the CRN (`CS63005` is `CS`). The shorthand is chosen per section, and must be unique within its department, ignoring case. See `server/db/classes.sql`.
 
+`ANONYMOUS_CLIENTS` in `.env` sets who can open a class page. Restart the server after changing it.
+
+| Visitor                       | `false` (default)  | `true`  |
+| ----------------------------- | ------------------ | ------- |
+| Not logged in                 | No access          | Viewer  |
+| Logged in, Student or no role | Viewer             | Viewer  |
+| Teacher of another class      | Host               | Viewer  |
+| Teacher of this section       | Host               | Host    |
+| Administrator or Super        | Host               | Host    |
+
 ## Socket.IO events
 
 Define events in `shared/src/index.ts`. Both `server/src/index.ts` and `client/src/socket.ts` are typed against those interfaces, so a mismatched event name or payload is a compile error.

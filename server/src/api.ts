@@ -1,6 +1,7 @@
 import cookieParser from "cookie-parser";
 import express, { Router, type CookieOptions, type NextFunction, type Request, type Response } from "express";
 import {
+  GetActiveSession,
   Login,
   Logout,
   RequireSession,
@@ -11,7 +12,11 @@ import {
 } from "./auth";
 import adminRouter from "./admin";
 import { CallProcedure, ProcedureError } from "./db";
-import type { ClassInfo } from "@virtual-projector/shared";
+import { ADMIN_ROLE_ID, TEACHER_ROLE_ID, type ClassInfo } from "@virtual-projector/shared";
+
+// Lets anyone watch a class stream without logging in. Only "true" turns it on, so a typo leaves it off.
+const ANONYMOUS_CLIENTS = process.env.ANONYMOUS_CLIENTS?.trim().toLowerCase() === "true";
+if (ANONYMOUS_CLIENTS) console.log("[*] ANONYMOUS_CLIENTS is on: class streams can be watched without logging in");
 
 const router = Router()
 
@@ -77,17 +82,32 @@ router.get("/session", RequireSession, (_req, res) => {
 });
 
 /**
- * Finds the class at /c/{department}/{shorthand}
+ * Who gets the host page. With anonymous viewing on, that's only the section's own teacher and admins.
  */
-router.get("/classes/:department/:shorthand", RequireSession, async (req, res) => {
-  const session: ActiveSession = res.locals.session;
-  const [found] = await CallProcedure<ClassInfo>("class.find", [
-    session.id,
-    session.keyHash,
-    req.params.department,
-    req.params.shorthand,
-  ]);
-  res.json({ ok: true, class: found });
+function CanHost(session: ActiveSession | null, isLecturer: boolean): boolean {
+  const level = Math.max(0, ...(session?.user.roles.map((role) => role.id) ?? []));
+  return ANONYMOUS_CLIENTS ? isLecturer || level >= ADMIN_ROLE_ID : level >= TEACHER_ROLE_ID;
+}
+
+/**
+ * Finds the class at /c/{department}/{shorthand}, and whether this visitor hosts or views it
+ */
+router.get("/classes/:department/:shorthand", async (req, res) => {
+  const session = await GetActiveSession(req);
+  if (!session && !ANONYMOUS_CLIENTS) {
+    res.status(401).json({ ok: false, error: "Not logged in" });
+    return;
+  }
+
+  const { department, shorthand } = req.params;
+  type ClassRow = Omit<ClassInfo, "can_host"> & { is_lecturer: number };
+  const [found] = session
+    ? await CallProcedure<ClassRow>("class.find", [session.id, session.keyHash, department, shorthand])
+    : await CallProcedure<ClassRow>("class.findAnonymous", [department, shorthand]);
+
+  const { is_lecturer, ...info } = found;
+  const classInfo: ClassInfo = { ...info, can_host: CanHost(session, Boolean(is_lecturer)) };
+  res.json({ ok: true, class: classInfo });
 });
 
 router.use("/admin", adminRouter);

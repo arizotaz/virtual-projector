@@ -123,21 +123,26 @@ export interface ActiveSession {
   user: AuthUser;
 }
 
+/** The request's session, or null if it has no valid one. */
+export async function GetActiveSession(req: Request): Promise<ActiveSession | null> {
+  const sessionID: unknown = req.cookies?.[SESSION_ID_COOKIE];
+  const sessionKey: unknown = req.cookies?.[SESSION_KEY_COOKIE];
+  if (typeof sessionID !== "string" || typeof sessionKey !== "string" || sessionID.length > 256) return null;
+
+  const keyHash = HashSessionKey(sessionKey);
+  const user = await GetUserData(sessionID, keyHash);
+  return user && { id: sessionID, keyHash, user };
+}
+
 /**
  * Middleware for routes that need a logged in user. Responds 401 without one,
  * otherwise puts the session on res.locals.session as an ActiveSession.
  */
 export async function RequireSession(req: Request, res: Response, next: NextFunction) {
-  const sessionID: unknown = req.cookies?.[SESSION_ID_COOKIE];
-  const sessionKey: unknown = req.cookies?.[SESSION_KEY_COOKIE];
-
-  if (typeof sessionID === "string" && typeof sessionKey === "string" && sessionID.length <= 256) {
-    const keyHash = HashSessionKey(sessionKey);
-    const user = await GetUserData(sessionID, keyHash);
-    if (user) {
-      res.locals.session = { id: sessionID, keyHash, user } satisfies ActiveSession;
-      return next();
-    }
+  const session = await GetActiveSession(req);
+  if (session) {
+    res.locals.session = session;
+    return next();
   }
 
   res.status(401).json({ ok: false, error: "Not logged in" });

@@ -34,6 +34,7 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       DB_DATABASE: ${DB_DATABASE}
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
+      ANONYMOUS_CLIENTS: ${ANONYMOUS_CLIENTS:-false}
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost/api/health"]
       interval: 10s

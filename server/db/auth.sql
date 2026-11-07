@@ -4,7 +4,7 @@
 --   * passwords: scrypt, verified in Node against account.getCredentials
 --   * session keys: SHA-256, so these procedures only ever see the hash
 --
--- Apply with: mariadb -h <host> -u <user> -p <database> < server/db/auth.sql
+-- Applied by `npm run db:init`, after schema.sql.
 
 -- Session IDs are 256 characters
 ALTER TABLE sessions MODIFY sessionID varchar(256) NOT NULL;

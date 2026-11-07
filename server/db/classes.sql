@@ -1,5 +1,4 @@
--- Class addresses: /c/{department}/{shorthand}. Safe to re-run. Apply after auth.sql and before admin.sql:
---   mariadb --default-character-set=utf8mb4 -h <host> -u <user> -p <database> < server/db/classes.sql
+-- Class addresses: /c/{department}/{shorthand}. Safe to re-run. Applied by `npm run db:init`, after auth.sql.
 --
 -- department is the letters at the start of the CRN (CS63005 is CS), so it can't drift from it.
 -- shorthand is chosen per section, first come first served within a department. The unique key is

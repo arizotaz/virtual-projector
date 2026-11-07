@@ -1,5 +1,4 @@
--- Admin panel procedures. Safe to re-run. Apply after auth.sql and classes.sql:
---   mariadb --default-character-set=utf8mb4 -h <host> -u <user> -p <database> < server/db/admin.sql
+-- Admin panel procedures. Safe to re-run. Applied by `npm run db:init`, after classes.sql.
 --
 -- Every procedure takes the caller's session and checks it itself. Passwords arrive already hashed.
 --

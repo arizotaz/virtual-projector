@@ -14,8 +14,11 @@ Node 22+ (see `.nvmrc`) and npm.
 
 ## Getting started
 
+Create a `.env` in the repo root (see [Database](#database)), then:
+
 ```bash
 npm install
+npm run db:init
 npm run dev
 ```
 
@@ -29,14 +32,28 @@ Open http://localhost:5173. The Vite dev server hot-reloads the React app and pr
 | `npm run build`     | Build the client (`client/dist`) and server (`server/dist`)  |
 | `npm start`         | Run the production server; it also serves the built client   |
 | `npm run typecheck` | Type-check every workspace                                   |
+| `npm run db:init`   | Create or update the database in `.env` (see below)          |
 
 Add a dependency to one package with `npm install <pkg> -w client` (or `-w server`).
 
+## Database
+
+The server needs MariaDB 10.11 or newer. It reads these from the root `.env`:
+
+| Variable                         | What it is                                                                 |
+| -------------------------------- | -------------------------------------------------------------------------- |
+| `DB_HOST`, `DB_PORT`             | Database server (`DB_PORT` defaults to 3306)                               |
+| `DB_USER`, `DB_PASSWORD`         | Login for the app                                                          |
+| `DB_DATABASE`                    | Database name. `db:init` creates it if it doesn't exist                    |
+| `ADMIN_EMAIL`, `ADMIN_PASSWORD`  | `db:init` gives this email a Super login, for the admin panel              |
+| `DEMO_EMAIL`, `DEMO_PASSWORD`    | Optional. `db:init` gives this email a Student login                       |
+| `ANONYMOUS_CLIENTS`              | `true` lets anyone watch class streams without logging in (see below)      |
+
+`npm run db:init` runs the files in `server/db` in order: `schema.sql` (tables and roles), `auth.sql`, `classes.sql`, then `admin.sql` (views and procedures). It's safe to re-run, and does the same for an existing database to bring it up to date: it never deletes rows, and never changes the password or roles of a user who already exists. After changing a file in `server/db`, run it again.
+
 ## Login and sessions
 
-The server reads `DB_*` from the root `.env` in development. The procedures are in `server/db/auth.sql`; apply it to a database with `mariadb -h <host> -u <user> -p <database> < server/db/auth.sql`.
-
-A user can only log in once they have a row in `accounts`. `npm run seed:admin -w server` creates one for the existing `ADMIN_EMAIL` user with the `ADMIN_PASSWORD` value in `.env`.
+The procedures are in `server/db/auth.sql`. A user can only log in once they have a row in `accounts`.
 
 | Route               | Does                                                    |
 | ------------------- | ------------------------------------------------------- |
@@ -48,7 +65,7 @@ Login sets two `HttpOnly` cookies: `sessionID` (256 characters, stored as is) an
 
 ## Admin panel
 
-The panel is at `/admin`, for users with the Administrator or Super role. Its API is in `server/src/admin.ts` and its procedures are in `server/db/admin.sql`; apply `auth.sql`, then `classes.sql`, then `admin.sql`.
+The panel is at `/admin`, for users with the Administrator or Super role. Its API is in `server/src/admin.ts` and its procedures are in `server/db/admin.sql`.
 
 Each `admin.*` procedure takes the caller's session and checks their permissions itself. A failure is raised with `SIGNAL`: the last three digits of a `45xxx` SQLSTATE are the HTTP status, and the message is shown to the admin.
 

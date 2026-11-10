@@ -99,6 +99,7 @@ let HostStream = ({ room }: { room: string }) => {
     return (
         <>
             <div className={`${styles.host}`}>
+                {/* stream controls */}
                 {status ? (
                     <>
                         <button onClick={ChangeScreen}>Change Screen</button>
@@ -108,8 +109,16 @@ let HostStream = ({ room }: { room: string }) => {
                 ) : (
                     <button onClick={StartStream}>Start Stream</button>
                 )}
+
+                {/* stream view-port */}
                 <span> Room: {room} {status && `· ${STATUS_TEXT[status]}`}</span>
                 <video ref={previewRef} muted playsInline />
+                
+                {/* internal modal for class management (teacher must be an admin & keeps stream uninterrupted) */}
+                <iframe src={`/admin/class/${room.split('/')[0]}/section/${room.split('/')[1]}`} style={{ minWidth: "50vw", minHeight: "65vh", }}>
+                </iframe>
+
+                {/* connection listing (needs to show student emails associated with tree-node) */}
                 {tree.sourceId && (
                     <>
                         <h3>Relay tree ({tree.nodes.length - 1} viewers)</h3>

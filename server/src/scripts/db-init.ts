@@ -5,7 +5,8 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import mariadb from "mariadb";
+import mariadb, { type Connection } from "mariadb";
+import { HashPassword } from "../passwords";
 
 // In order: each file builds on the ones before it
 const SQL_FILES = ["schema.sql", "auth.sql", "classes.sql", "admin.sql"];
@@ -13,6 +14,90 @@ const SQL_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../.
 
 const SUPER_ROLE_ID = 4;
 const STUDENT_ROLE_ID = 1;
+
+// Must match the COLLATE in schema.sql
+const COLLATION = "utf8mb4_uca1400_ai_ci";
+
+const Quote = (name: string) => `\`${name.replaceAll("`", "``")}\``;
+
+/**
+ * Converts tables made before the switch to COLLATION, and does nothing once they're converted.
+ * MariaDB won't change the collation of a column a foreign key links, even with foreign key checks off,
+ * so those keys are dropped first and put back exactly as they were afterwards.
+ */
+async function ConvertTables(conn: Connection) {
+  const tables = (
+    await conn.query<{ name: string }[]>(
+      `SELECT t.TABLE_NAME AS name
+         FROM information_schema.TABLES t
+        WHERE t.TABLE_SCHEMA = DATABASE()
+          AND t.TABLE_TYPE = 'BASE TABLE'
+          AND (t.TABLE_COLLATION <> ? OR EXISTS (
+                SELECT 1 FROM information_schema.COLUMNS c
+                 WHERE c.TABLE_SCHEMA = t.TABLE_SCHEMA AND c.TABLE_NAME = t.TABLE_NAME AND c.COLLATION_NAME <> ?))`,
+      [COLLATION, COLLATION],
+    )
+  ).map((table) => table.name);
+  if (tables.length === 0) return;
+
+  // Foreign keys with a text column that start or end at a table being converted
+  type Row = { tbl: string; name: string; col: string; ref: string; ref_col: string; on_update: string; on_delete: string; text: number };
+  const rows = await conn.query<Row[]>(
+    `SELECT k.TABLE_NAME AS tbl, k.CONSTRAINT_NAME AS name, k.COLUMN_NAME AS col,
+            k.REFERENCED_TABLE_NAME AS ref, k.REFERENCED_COLUMN_NAME AS ref_col,
+            r.UPDATE_RULE AS on_update, r.DELETE_RULE AS on_delete, c.COLLATION_NAME IS NOT NULL AS text
+       FROM information_schema.KEY_COLUMN_USAGE k
+       JOIN information_schema.REFERENTIAL_CONSTRAINTS r
+         ON r.CONSTRAINT_SCHEMA = k.CONSTRAINT_SCHEMA AND r.TABLE_NAME = k.TABLE_NAME AND r.CONSTRAINT_NAME = k.CONSTRAINT_NAME
+       JOIN information_schema.COLUMNS c
+         ON c.TABLE_SCHEMA = k.TABLE_SCHEMA AND c.TABLE_NAME = k.TABLE_NAME AND c.COLUMN_NAME = k.COLUMN_NAME
+      WHERE k.TABLE_SCHEMA = DATABASE() AND k.REFERENCED_TABLE_SCHEMA = DATABASE()
+      ORDER BY k.TABLE_NAME, k.CONSTRAINT_NAME, k.ORDINAL_POSITION`,
+  );
+  const keys = new Map<string, Row & { cols: string[]; refCols: string[]; hasText: boolean }>();
+  for (const row of rows) {
+    const id = `${row.tbl}.${row.name}`;
+    const key = keys.get(id) ?? { ...row, cols: [], refCols: [], hasText: false };
+    key.cols.push(row.col);
+    key.refCols.push(row.ref_col);
+    key.hasText ||= Boolean(row.text);
+    keys.set(id, key);
+  }
+  const linked = [...keys.values()].filter((key) => key.hasText && (tables.includes(key.tbl) || tables.includes(key.ref)));
+  const restore = linked.map(
+    (key) =>
+      `ALTER TABLE ${Quote(key.tbl)} ADD CONSTRAINT ${Quote(key.name)} FOREIGN KEY (${key.cols.map(Quote).join(", ")}) ` +
+      `REFERENCES ${Quote(key.ref)} (${key.refCols.map(Quote).join(", ")}) ON DELETE ${key.on_delete} ON UPDATE ${key.on_update}`,
+  );
+
+  for (const key of linked) await conn.query(`ALTER TABLE ${Quote(key.tbl)} DROP FOREIGN KEY ${Quote(key.name)}`);
+
+  let convertError: unknown = null;
+  try {
+    for (const table of tables) {
+      await conn.query(`ALTER TABLE ${Quote(table)} CONVERT TO CHARACTER SET utf8mb4 COLLATE ${COLLATION}`);
+    }
+  } catch (err) {
+    convertError = err;
+  }
+
+  // Put the keys back even if a conversion failed
+  const notRestored: string[] = [];
+  for (const statement of restore) {
+    try {
+      await conn.query(statement);
+    } catch (err) {
+      notRestored.push(`${statement};  -- ${(err as { sqlMessage?: string }).sqlMessage ?? err}`);
+    }
+  }
+  if (notRestored.length > 0) {
+    console.error(`[-] These foreign keys couldn't be put back. Fix the problem, then run them by hand:\n${notRestored.join("\n")}`);
+  }
+  if (convertError) throw convertError;
+  if (notRestored.length > 0) throw new Error("Foreign keys are missing, see above");
+
+  console.log(`[+] Converted ${tables.length} tables to ${COLLATION}: ${tables.join(", ")}`);
+}
 
 /**
  * Splits a SQL file into statements the way the mariadb command line does,
@@ -87,7 +172,7 @@ try {
     console.log(`[*] Using database ${DB_DATABASE}`);
   } catch (err) {
     if ((err as { errno?: number }).errno !== 1049) throw err; // 1049: unknown database
-    await conn.query(`CREATE DATABASE ${database} CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci`);
+    await conn.query(`CREATE DATABASE ${database} CHARACTER SET utf8mb4 COLLATE ${COLLATION}`);
     await conn.query(`USE ${database}`);
     console.log(`[+] Created database ${DB_DATABASE}`);
   }
@@ -104,10 +189,7 @@ try {
     }
     console.log(`[+] Applied ${file} (${statements.length} statements)`);
   }
-
-  // Imported only now: it opens a pool on DB_DATABASE, which might not have existed before
-  const { HashPassword } = await import("../auth");
-  const { pool } = await import("../db");
+  await ConvertTables(conn);
 
   /** Gives an email a user and a login, unless they already have them */
   const SeedLogin = async (label: string, email: string | undefined, password: string | undefined, first: string, roleId: number) => {
@@ -138,12 +220,8 @@ try {
     console.log(`[+] ${label}: ${email} can now log in`);
   };
 
-  try {
-    await SeedLogin("Admin", process.env.ADMIN_EMAIL, process.env.ADMIN_PASSWORD, "Admin", SUPER_ROLE_ID);
-    await SeedLogin("Demo", process.env.DEMO_EMAIL, process.env.DEMO_PASSWORD, "Demo", STUDENT_ROLE_ID);
-  } finally {
-    await pool.end();
-  }
+  await SeedLogin("Admin", process.env.ADMIN_EMAIL, process.env.ADMIN_PASSWORD, "Admin", SUPER_ROLE_ID);
+  await SeedLogin("Demo", process.env.DEMO_EMAIL, process.env.DEMO_PASSWORD, "Demo", STUDENT_ROLE_ID);
 
   console.log("[+] Database is ready");
 } catch (err) {

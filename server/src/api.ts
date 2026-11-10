@@ -11,8 +11,8 @@ import {
   type ActiveSession,
 } from "./auth";
 import adminRouter from "./admin";
-import { CallProcedure, ProcedureError } from "./db";
-import { ADMIN_ROLE_ID, TEACHER_ROLE_ID, type ClassInfo } from "@virtual-projector/shared";
+import { CallProcedure, pool, ProcedureError } from "./db";
+import { ADMIN_ROLE_ID, STUDENT_ROLE_ID, TEACHER_ROLE_ID, type ClassInfo } from "@virtual-projector/shared";
 
 // Lets anyone watch a class stream without logging in. Only "true" turns it on, so a typo leaves it off.
 const ANONYMOUS_CLIENTS = process.env.ANONYMOUS_CLIENTS?.trim().toLowerCase() === "true";
@@ -108,6 +108,44 @@ router.get("/classes/:department/:shorthand", async (req, res) => {
   const { is_lecturer, ...info } = found;
   const classInfo: ClassInfo = { ...info, can_host: CanHost(session, Boolean(is_lecturer)) };
   res.json({ ok: true, class: classInfo });
+});
+
+
+async function GetEnrollments(session: ActiveSession | null) {
+    if (!session) return [];
+
+    type EnrolledSection = { name: string; department: string; shorthand: string | null };
+    const level = Math.max(0, ...(session?.user.roles.map((role) => role.id) ?? []));
+    let rows = [];
+    if (level === STUDENT_ROLE_ID) {
+        rows = await pool.query<EnrolledSection[]>(
+            `SELECT c.name, s.department, s.shorthand
+            FROM enrollments e
+            JOIN sections s ON s.crn = e.crn AND s.sectionid = e.sectionid
+            JOIN classes c  ON c.crn = s.crn
+            WHERE e.studentid = ?`,
+            [session.user.id],
+        );
+    } else if (level === TEACHER_ROLE_ID) {
+        rows = await pool.query<EnrolledSection[]>(
+            `SELECT c.name, s.department, s.shorthand
+            FROM sections s
+            JOIN classes c ON c.crn = s.crn
+            WHERE s.lecturer = ?`,
+            [session.user.id],
+        );
+    }
+    console.log(`[!] ${session.user.id} :`, rows);
+    return rows;
+}
+router.get("/my-classes", async (req, res) => {
+  const session = await GetActiveSession(req);
+  if (!session && !ANONYMOUS_CLIENTS) {
+    res.status(401).json({ ok: false, error: "Not logged in" });
+    return;
+  }
+
+  res.json({ ok: true, classes: await GetEnrollments(session) });
 });
 
 router.use("/admin", adminRouter);

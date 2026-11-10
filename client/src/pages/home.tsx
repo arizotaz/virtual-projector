@@ -4,32 +4,47 @@ import { socket } from "../socket";
 import Navbar from "../components/navbar";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { GetBackendStr } from "../utilities/browser_utils";
-import { GetCurrentUser } from "../utilities/user";
+import { GetCurrentUser, GetEnrollments } from "../utilities/user";
 
 export default function Home() {
+    type EnrolledSection = { name: string; department: string; shorthand: string | null };
+
+    const [loading, setLoading] = useState<boolean>(true);
     const [user, setUser] = useState<AuthUser | null>(null);
+    const [enrollments, setEnrollments] = useState<EnrolledSection[]>([]);
 
     useEffect(() => {
         const controller = new AbortController();
 
         let LoadUser = async() => {
             let usr = await GetCurrentUser(controller.signal);
-            if (!controller.signal.aborted) setUser(usr);
+            if (!controller.signal.aborted) {
+                setUser(usr);
+                setEnrollments(await GetEnrollments())
+            }
+            setLoading(false);
         }
         LoadUser();
 
         return () => controller.abort();
     }, []);
 
-    if (!user) return null;
+    if (loading) return (
+        <span>Loading...</span>
+    );
 
-    const details = [
-        ["ID", user.id],
-        ["Name", user.name],
-        ["Initial", user.initial],
-        ["Email", user.email],
-        ["Roles", user.roles.map((role) => `${role.name} (${role.id})`).join(", ") || "None"],
-    ];
+    if (!user) return (
+        <main>
+            <h1>Virtual Projector</h1>
+            <p>
+                Lorem ipsum dolor sit amet consectetur adipisicing elit.
+                Dicta asperiores dolore, quaerat laboriosam rem nihil placeat
+                aspernatur dignissimos distinctio explicabo dolores totam
+                quibusdam hic consectetur iste rerum iure, eum accusantium.
+            </p>
+            Login <a href="/login">HERE</a>!
+        </main>
+    );
 
     return (
         <main
@@ -42,14 +57,14 @@ export default function Home() {
                 padding: 24,
             }}
         >
-            <dl style={{ display: "grid", gridTemplateColumns: "max-content 1fr", gap: "8px 16px", margin: 0 }}>
-                {details.map(([label, value]) => (
-                    <div key={label} style={{ display: "contents" }}>
-                        <dt style={{ fontWeight: 600 }}>{label}</dt>
-                        <dd style={{ margin: 0, overflowWrap: "anywhere" }}>{value}</dd>
-                    </div>
-                ))}
-            </dl>
+            <h1>Your Classes</h1>
+            {enrollments.map( (c) => (
+                <ul>
+                    <li>
+                        <a href={`/c/${c.department}/${c.shorthand}`}>{c.name}</a>
+                    </li>
+                </ul>
+            ))}
         </main>
     );
 }

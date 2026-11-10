@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import type { AuthUser } from "@virtual-projector/shared";
+import { useEffect, useState, Fragment, type ReactNode } from "react";
+import { ADMIN_ROLE_ID, type AuthUser } from "@virtual-projector/shared";
 import { socket } from "../socket";
 import Navbar from "../components/navbar";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
@@ -46,6 +46,44 @@ export default function Home() {
         </main>
     );
 
+    const details = [
+        ["ID", user.id],
+        ["Name", user.name],
+        ["Initial", user.initial],
+        ["Email", user.email],
+        ["Roles", user.roles.map((role) => `${role.name} (${role.id})`).join(", ") || "None"],
+    ];
+
+    const content: ReactNode[] = [];
+
+    if (user.roles.some((r) => r.id >= ADMIN_ROLE_ID)) {
+        content.push(<a key="admin" href="/admin">Admin Panel</a>);
+    }
+
+    content.push(
+        <Fragment key="classes">
+            <h1>Your Info</h1>
+            <dl style={{ display: "grid", gridTemplateColumns: "max-content 1fr", gap: "8px 16px", margin: 0 }}>
+                {details.map(([label, value]) => (
+                    <div key={label} style={{ display: "contents" }}>
+                        <dt style={{ fontWeight: 600 }}>{label}</dt>
+                        <dd style={{ margin: 0, overflowWrap: "anywhere" }}>{value}</dd>
+                    </div>
+                ))}
+            </dl>
+            <hr/>
+
+            <h2>Your Classes</h2>
+            <ul>
+                {enrollments.map((c) => (
+                    <li key={`${c.department}/${c.shorthand}`}>
+                        <a href={`/c/${c.department}/${c.shorthand}`}>{c.name}</a>
+                    </li>
+                ))}
+            </ul>
+        </Fragment>,
+    );
+
     return (
         <main
             style={{
@@ -57,14 +95,7 @@ export default function Home() {
                 padding: 24,
             }}
         >
-            <h1>Your Classes</h1>
-            {enrollments.map( (c) => (
-                <ul>
-                    <li>
-                        <a href={`/c/${c.department}/${c.shorthand}`}>{c.name}</a>
-                    </li>
-                </ul>
-            ))}
+            {content}
         </main>
     );
 }

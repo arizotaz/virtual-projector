@@ -2,20 +2,13 @@ FROM node:22-alpine AS build
 WORKDIR /app
 
 COPY package.json package-lock.json tsconfig.base.json ./
-COPY shared/package.json shared/
-COPY client/package.json client/
-COPY server/package.json server/
-RUN npm ci
+COPY shared/ shared/
+COPY client/ client/
+COPY server/ server/
 
-# sources
-COPY shared shared
-COPY client client
-COPY server server
-
-RUN npm run build
+RUN npm ci && npm run build
 
 FROM nginx:latest
-
 RUN apt-get update && apt-get install -y --no-install-recommends \
         supervisor \
         net-tools \

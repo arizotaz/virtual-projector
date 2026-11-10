@@ -51,6 +51,8 @@ The server needs MariaDB 10.11 or newer. It reads these from the root `.env`:
 
 `npm run db:init` runs the files in `server/db` in order: `schema.sql` (tables and roles), `auth.sql`, `classes.sql`, then `admin.sql` (views and procedures). It's safe to re-run, and does the same for an existing database to bring it up to date: it never deletes rows, and never changes the password or roles of a user who already exists. After changing a file in `server/db`, run it again.
 
+Everything uses the `utf8mb4_uca1400_ai_ci` collation (Unicode 14 rules, ignoring case and accents, so `Tia` matches `Tía`), which needs MariaDB 10.10 or newer. `db:init` sets it as the database default, because procedure parameters take that default and MariaDB refuses to compare two different collations. It also converts tables from older installs.
+
 ## Login and sessions
 
 The procedures are in `server/db/auth.sql`. A user can only log in once they have a row in `accounts`.

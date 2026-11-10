@@ -18,6 +18,25 @@ services:
     networks:
       - app_internal
 
+  db-init:
+    build:
+      context: .
+      dockerfile: ./db_init_dockerfile
+    environment:
+      DB_HOST: mariadb
+      DB_PORT: 3306
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_DATABASE: ${DB_DATABASE}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+    restart: "no"
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    networks:
+      - app_internal
+
   app:
     restart: unless-stopped
     build:

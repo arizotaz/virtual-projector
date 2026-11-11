@@ -41,13 +41,13 @@ let ClassPage = () => {
     // Each section streams in its own room, by CRN so changing the shorthand doesn't split a live class.
     const room = `${classInfo.crn}/${classInfo.sectionid}`;
 
-    if (classInfo.can_host) return <ClassTeacherScreen key={room} room={room} />;
+    if (classInfo.can_host) return <ClassTeacherScreen key={room} room={room} crn={classInfo.crn} sectionid={classInfo.sectionid} />;
     return <ClassStudentScreen key={room} room={room} />;
 }
 
-const ClassTeacherScreen = ({ room }: { room: string }) => {
+const ClassTeacherScreen = ({ room, crn, sectionid }: { room: string, crn: string, sectionid: string }) => {
     return <>
-        <HostStream room={room} />
+        <HostStream room={room} crn={crn} sectionid={sectionid} />
     </>;
 }
 const ClassStudentScreen = ({ room }: { room: string }) => {

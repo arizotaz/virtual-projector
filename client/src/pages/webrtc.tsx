@@ -5,6 +5,7 @@ import RelayTreeView, { TreeDepth } from "../components/relayTree";
 import { DEFAULT_ROOM, RelayNode, type RelayStatus } from "../webrtc/RelayNode";
 import { StreamDecoder } from "../webrtc/StreamDecoder";
 import styles from "./webrtc.module.css"
+import ClassManagement from "../components/ClassManagement";
 
 const EMPTY_TREE: RelayTree = { room: DEFAULT_ROOM, sourceId: null, nodes: [] };
 
@@ -19,7 +20,7 @@ const STATUS_TEXT: Record<RelayStatus, string> = {
 const HOST_STOPPED_TEXT = "The host stopped the stream. Waiting for it to start again";
 
 /** Start/stop controls and preview for streaming the host's screen to a room */
-let HostStream = ({ room }: { room: string }) => {
+let HostStream = ({ room, crn, sectionid }: { room: string, crn: string, sectionid: string }) => {
     let streamRef = useRef<MediaStream | null>(null);
     let previewRef = useRef<HTMLVideoElement>(null)
     let fakeClientRef = useRef<RelayNode | null>(null);
@@ -114,9 +115,8 @@ let HostStream = ({ room }: { room: string }) => {
                 <span> Room: {room} {status && `· ${STATUS_TEXT[status]}`}</span>
                 <video ref={previewRef} muted playsInline />
                 
-                {/* internal modal for class management (teacher must be an admin & keeps stream uninterrupted) */}
-                <iframe src={`/admin/class/${room.split('/')[0]}/section/${room.split('/')[1]}`} style={{ minWidth: "50vw", minHeight: "65vh", }}>
-                </iframe>
+                {/* internal modal for class management (keeps stream uninterrupted) */}
+                <ClassManagement crn={crn} sectionid={sectionid} />
 
                 {/* connection listing (needs to show student emails associated with tree-node) */}
                 {tree.sourceId && (
@@ -131,7 +131,7 @@ let HostStream = ({ room }: { room: string }) => {
     );
 }
 
-let WebRTCHostPage = () => <HostStream room={DEFAULT_ROOM} />;
+let WebRTCHostPage = () => <HostStream room={DEFAULT_ROOM} crn={""} sectionid={""} />;
 
 /** Watches a room's stream, and relays it on to this viewer's children */
 let ViewerStream = ({ room }: { room: string }) => {

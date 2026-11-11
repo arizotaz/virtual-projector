@@ -4,8 +4,8 @@ import { STUDENT_ROLE_ID, TEACHER_ROLE_ID, type AdminClass, type AdminSection, t
 import { ActionResult, AdminRequest, ClassAddress, FullName, useAction, useAdminData, useDebounced } from "./common";
 import styles from "./admin.module.css";
 
-let ClassPath = (crn: string) => `/classes/${encodeURIComponent(crn)}`;
-let SectionPath = (crn: string, sectionid: string) => `${ClassPath(crn)}/sections/${encodeURIComponent(sectionid)}`;
+export let ClassPath = (crn: string) => `/classes/${encodeURIComponent(crn)}`;
+export let SectionPath = (crn: string, sectionid: string) => `${ClassPath(crn)}/sections/${encodeURIComponent(sectionid)}`;
 
 /** /admin/classes */
 let AdminClassList = () => {

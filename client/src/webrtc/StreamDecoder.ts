@@ -1,5 +1,10 @@
 import type { EncodedFrame, StreamConfig } from "./protocol";
 
+// Chrome-only API; not in the standard DOM typings.
+declare const MediaStreamTrackGenerator:
+    | (new (init: { kind: "video" }) => MediaStreamTrack & { writable: WritableStream<VideoFrame> })
+    | undefined;
+
 /**
  * Decodes the forwarded frames for local display and paints them on a
  * canvas. This is only for watching: forwarding never goes through here.
@@ -8,6 +13,8 @@ export class StreamDecoder {
     /** The decoder lost its place and needs a keyframe to resume */
     public onNeedKeyframe: () => void = () => {};
     public onError: (error: string) => void = () => {};
+    /** A picture's size, when it first shows after starting or a Clear, and whenever it changes */
+    public onPictureSize: (width: number, height: number) => void = () => {};
 
     private canvas: HTMLCanvasElement;
     private ctx: CanvasRenderingContext2D;
@@ -15,10 +22,25 @@ export class StreamDecoder {
     private config: StreamConfig | null = null;
     private waitingForKey = true;
     private closed = false;
+    private painted = false;
+    private outputWriter: WritableStreamDefaultWriter<VideoFrame> | null = null;
 
     constructor(canvas: HTMLCanvasElement) {
         this.canvas = canvas;
         this.ctx = canvas.getContext("2d")!;
+    }
+
+    /**
+     * A video stream of whatever this decoder shows, for picture-in-picture.
+     * Decoded frames are fed in directly where possible, because a canvas may
+     * stop capturing while its tab is hidden, which is when PiP matters most.
+     */
+    public CreateOutputStream(): MediaStream {
+        if (typeof MediaStreamTrackGenerator === "undefined") return this.canvas.captureStream();
+
+        const generator = new MediaStreamTrackGenerator({ kind: "video" });
+        this.outputWriter = generator.writable.getWriter();
+        return new MediaStream([generator]);
     }
 
     public async Configure(config: StreamConfig) {
@@ -58,12 +80,19 @@ export class StreamDecoder {
 
     public Clear() {
         this.waitingForKey = true;
+        this.painted = false;
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        // Blank the output too, so PiP doesn't stay frozen on the last picture
+        if (this.outputWriter && !this.closed) {
+            this.WriteOutput(new VideoFrame(this.canvas, { timestamp: performance.now() * 1000 }));
+        }
     }
 
     public Close() {
         this.closed = true;
         this.CloseDecoder();
+        this.outputWriter?.close().catch(() => {});
+        this.outputWriter = null;
     }
 
     private CloseDecoder() {
@@ -91,11 +120,28 @@ export class StreamDecoder {
     }
 
     private Paint(frame: VideoFrame) {
-        if (this.canvas.width !== frame.displayWidth || this.canvas.height !== frame.displayHeight) {
-            this.canvas.width = frame.displayWidth;
-            this.canvas.height = frame.displayHeight;
+        const { displayWidth: width, displayHeight: height } = frame;
+        const resized = this.canvas.width !== width || this.canvas.height !== height;
+        if (resized) {
+            this.canvas.width = width;
+            this.canvas.height = height;
         }
         this.ctx.drawImage(frame, 0, 0);
-        frame.close();
+        this.WriteOutput(frame);
+
+        if (resized || !this.painted) {
+            this.painted = true;
+            this.onPictureSize(width, height);
+        }
+    }
+
+    /** Sends a frame to the output stream if it can take one, and always closes it */
+    private WriteOutput(frame: VideoFrame) {
+        const writer = this.outputWriter;
+        if (!writer || (writer.desiredSize ?? 1) <= 0) {
+            frame.close();
+            return;
+        }
+        writer.write(frame).catch(() => {}).finally(() => frame.close());
     }
 }

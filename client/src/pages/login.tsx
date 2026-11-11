@@ -1,20 +1,21 @@
-import { useState } from 'react';
-
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { GetBackendStr } from "../utilities/browser_utils";
 import Feedback from '../components/feedback';
 
 export default function Login() {
-    const [success, SetSuccess] = useState(false);
-    const [msg, SetMsg] = useState<string|undefined|null>("");
+    const navigate = useNavigate();
+    const [error, setError] = useState<string | null>(null);
 
     const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
         try {
             e.preventDefault();
+            setError(null);
 
             const form = new FormData(e.currentTarget);
             const email = form.get("email");
             const password = form.get("password");
-    
+
             const endpoint = GetBackendStr("/login");
             const response = await fetch(endpoint, {
                 method: "POST",
@@ -27,25 +28,16 @@ export default function Login() {
                     "password": password,
                 }),
             });
-    
-            const result = await response.json();
 
-            SetSuccess(result.success);
-            SetMsg(result.message);
-    
-            // clear feedback after some time
-            setTimeout(() => {
-                SetMsg(null);
-                window.location.reload();
-            }, result.success ? 1000 : 3000);
-    
-            if (result.success) {
-                console.log("[+] Login Successful")
-            } else {
-                console.error("[-] Login Failed: Incorrect email or password!")
+            if (response.ok) {
+                navigate("/");
+                return;
             }
+
+            setError(response.status === 401 ? "Incorrect email or password" : "Something went wrong. Please try again.");
         } catch (e) {
             console.error("[-] Login Failed:", e);
+            setError("Could not reach the server. Please try again.");
         }
     };
 
@@ -100,6 +92,7 @@ export default function Login() {
                         name="email"
                         type="email"
                         placeholder="you@example.com"
+                        autoComplete="email"
                         required
                         style={{
                             width: "100%",
@@ -128,6 +121,7 @@ export default function Login() {
                         name="password"
                         type="password"
                         placeholder="Password"
+                        autoComplete="current-password"
                         required
                         style={{
                             width: "100%",
@@ -139,6 +133,12 @@ export default function Login() {
                             fontSize: 16,
                         }}
                     />
+
+                    {error && (
+                        <p role="alert" style={{ color: "#b00020", marginTop: 0, marginBottom: 16 }}>
+                            {error}
+                        </p>
+                    )}
 
                     <button
                         type="submit"

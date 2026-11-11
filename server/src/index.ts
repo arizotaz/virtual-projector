@@ -1,7 +1,7 @@
 import express from "express";
-import cookieParser from "cookie-parser";
-import cors from "cors";
-import { GetInfo, Login, Logout, SESSION_TTL_MS } from "./utils";
+import { Server } from "socket.io";
+import type { ClientToServerEvents, ServerToClientEvents } from "@virtual-projector/shared";
+import { RoomManager } from "./rooms";
 
 const PORT = Number(process.env.PORT ?? 3000);
 
@@ -88,7 +88,14 @@ import { RoomManager } from "./rooms";
 
 const httpServer = createServer(app);
 const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer);
-const rooms = new RoomManager(io);
+
+// nginx runs on the same machine; trust it for the client's IP and HTTP/HTTPS scheme
+app.set("trust proxy", "loopback");
+
+
+import apiRouter from "./api"
+app.use('/api', apiRouter);
+
 
 // In production, serve the built React app.
 const clientDist = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../client/dist");
@@ -98,6 +105,12 @@ if (existsSync(clientDist)) {
         res.sendFile(path.join(clientDist, "index.html"));
     });
 }
+
+/**
+ * This code is unused right now but could be useful later
+ * let SocketUserList: Record<string, SocketConnection> = {};
+ */
+const rooms = new RoomManager(io);
 
 io.on("connection", (socket) => {
   console.log(`client connected: ${socket.id}`);

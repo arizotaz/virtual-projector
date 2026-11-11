@@ -18,31 +18,24 @@ services:
     networks:
       - app_internal
 
-  migrate:
+  db-init:
     build:
       context: .
-      dockerfile: ./migrate/Dockerfile
+      dockerfile: ./db_init_dockerfile
     environment:
       DB_HOST: mariadb
       DB_PORT: 3306
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
       DB_DATABASE: ${DB_DATABASE}
-      ADMIN_USER: ${ADMIN_USER}
       ADMIN_EMAIL: ${ADMIN_EMAIL}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
-    # execute after the dockerfile has been parsed so the env variables are present
-    command: >
-      sh -c "
-        npm run db:generate &&
-        npm run db:migrate &&
-        npm run db:init
-      "
-    networks:
-      - app_internal
+    restart: "no"
     depends_on:
       mariadb:
         condition: service_healthy
+    networks:
+      - app_internal
 
   app:
     restart: unless-stopped
@@ -60,7 +53,7 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       DB_DATABASE: ${DB_DATABASE}
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
-      COOKIE_SECRET: ${COOKIE_SECRET}
+      ANONYMOUS_CLIENTS: ${ANONYMOUS_CLIENTS:-false}
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost/api/health"]
       interval: 10s

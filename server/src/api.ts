@@ -115,9 +115,14 @@ async function GetEnrollments(session: ActiveSession | null) {
     if (!session) return [];
 
     type EnrolledSection = { name: string; department: string; shorthand: string | null };
+    let isStudent = session.user.roles.some(r => r.id === STUDENT_ROLE_ID);
+    let isTeacher = session.user.roles.some(r => r.id === TEACHER_ROLE_ID);
+    let isAdmin   = session.user.roles.some(r => r.id >=  ADMIN_ROLE_ID);
+
     const level = Math.max(0, ...(session?.user.roles.map((role) => role.id) ?? []));
+
     let rows = [];
-    if (level === STUDENT_ROLE_ID) {
+    if (isStudent) {
         rows = await pool.query<EnrolledSection[]>(
             `SELECT c.name, s.department, s.shorthand
             FROM enrollments e
@@ -126,7 +131,7 @@ async function GetEnrollments(session: ActiveSession | null) {
             WHERE e.studentid = ?`,
             [session.user.id],
         );
-    } else if (level === TEACHER_ROLE_ID) {
+    } else if (isTeacher) {
         rows = await pool.query<EnrolledSection[]>(
             `SELECT c.name, s.department, s.shorthand
             FROM sections s
@@ -135,7 +140,7 @@ async function GetEnrollments(session: ActiveSession | null) {
             [session.user.id],
         );
     }
-    console.log(`[!] ${session.user.id} :`, rows);
+    console.log(`[!] ${session.user.id} (max_role:${level}) :`, rows);
     return rows;
 }
 router.get("/my-classes", async (req, res) => {

@@ -4,7 +4,7 @@ import { socket } from "../socket";
 import RelayTreeView, { TreeDepth } from "../components/relayTree";
 import { DEFAULT_ROOM, RelayNode, type RelayStatus } from "../webrtc/RelayNode";
 import { StreamDecoder } from "../webrtc/StreamDecoder";
-import styles from "./webrtc.module.css"
+import styles from "../styles/webrtc.module.css"
 import ClassManagement from "../components/ClassManagement";
 
 const EMPTY_TREE: RelayTree = { room: DEFAULT_ROOM, sourceId: null, nodes: [] };

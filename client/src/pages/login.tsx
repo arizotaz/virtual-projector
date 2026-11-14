@@ -48,7 +48,7 @@ export default function Login() {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                background: "#f5f5f5",
+                background: "var(--background-color)",
                 fontFamily: "system-ui, sans-serif",
                 padding: 24,
             }}
@@ -57,10 +57,10 @@ export default function Login() {
                 style={{
                     width: "100%",
                     maxWidth: 400,
-                    background: "white",
+                    background: "var(--surface-color)",
                     padding: 32,
                     borderRadius: 12,
-                    boxShadow: "0 4px 20px rgba(0, 0, 0, 0.08)",
+                    border: "1px solid var(--border-color)",
                 }}
             >
                 <h1 style={{ marginTop: 0, marginBottom: 8 }}>
@@ -69,7 +69,7 @@ export default function Login() {
 
                 <Feedback success={success} message={msg} />
 
-                <p style={{ color: "#666", marginBottom: 24 }}>
+                <p style={{ color: "var(--muted-color)", marginBottom: 24 }}>
                     Sign in to your account
                 </p>
 
@@ -99,7 +99,7 @@ export default function Login() {
                             boxSizing: "border-box",
                             padding: "10px 12px",
                             marginBottom: 16,
-                            border: "1px solid #ccc",
+                            border: "1px solid var(--border-color)",
                             borderRadius: 6,
                             fontSize: 16,
                         }}
@@ -128,14 +128,14 @@ export default function Login() {
                             boxSizing: "border-box",
                             padding: "10px 12px",
                             marginBottom: 24,
-                            border: "1px solid #ccc",
+                            border: "1px solid var(--border-color)",
                             borderRadius: 6,
                             fontSize: 16,
                         }}
                     />
 
                     {error && (
-                        <p role="alert" style={{ color: "#b00020", marginTop: 0, marginBottom: 16 }}>
+                        <p role="alert" style={{ color: "var(--highlight-2)", marginTop: 0, marginBottom: 16 }}>
                             {error}
                         </p>
                     )}
@@ -147,8 +147,8 @@ export default function Login() {
                             padding: "11px 16px",
                             border: "none",
                             borderRadius: 6,
-                            background: "#111",
-                            color: "white",
+                            background: "var(--highlight-1)",
+                            color: "var(--surface-color)",
                             fontSize: 16,
                             fontWeight: 600,
                             cursor: "pointer",

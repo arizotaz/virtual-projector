@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { STUDENT_ROLE_ID, TEACHER_ROLE_ID, type AdminSection, type AdminUser, type Role } from "@virtual-projector/shared";
 import { ActionResult, AdminRequest, ClassAddress, FullName, useAction, useAdminData, useDebounced } from "./common";
-import styles from "./admin.module.css";
+import styles from "../../styles/admin.module.css";
 
 interface UserListProps {
     title: string;

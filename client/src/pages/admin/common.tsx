@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { AdminSection, AdminUser } from "@virtual-projector/shared";
 import { GetBackendStr } from "../../utilities/browser_utils";
-import styles from "./admin.module.css";
+import styles from "../../styles/admin.module.css";
 
 /** Calls the admin API. Throws an Error with the server's message if the request fails. */
 export async function AdminRequest<T = void>(path: string, method = "GET", body?: unknown, signal?: AbortSignal): Promise<T> {

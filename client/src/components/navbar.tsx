@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { GetBackendStr, UserData } from "../utilities/browser_utils";
+import { AuthUser } from "@virtual-projector/shared";
 
 import styles from "./navbar.module.css"
 
@@ -15,7 +16,7 @@ const ROLE_HOME: Record<string, string> = {
     super: "/admin",
 };
 
-export default function Navbar({ user }: { user: UserData | undefined | null }) {
+export default function Navbar({ user }: { user: AuthUser | undefined | null }) {
     // if user can be resolved => valid sid cookie and session can find them in DB
 
     async function handleLogout() {
@@ -62,7 +63,7 @@ export default function Navbar({ user }: { user: UserData | undefined | null }) 
     );
 }
 
-let NavUserLogin = ({ user }: { user: UserData | undefined | null }) => {
+let NavUserLogin = ({ user }: { user: AuthUser | undefined | null }) => {
     return (
         <>
             <div className="loginDir">
@@ -72,18 +73,18 @@ let NavUserLogin = ({ user }: { user: UserData | undefined | null }) => {
     );
 }
 
-let NavUserProfile = ({ user }: { user: UserData | undefined | null }) => {
+let NavUserProfile = ({ user }: { user: AuthUser | undefined | null }) => {
     return (
         <>
             <div className={`${styles.userProfile}`}>
                 <div className={`${styles.container}`}>
                     <div className={`${styles.picture}`}>
                         <div className={`${styles.profileImage}`}>
-                            {user?.firstName.charAt(0).toUpperCase()}
+                            {user?.name.charAt(0).toUpperCase()}
                         </div>
                     </div>
                     <div className={`${styles.info}`}>
-                        <p className={`${styles.name}`}>{user?.firstName}</p>
+                        <p className={`${styles.name}`}>{user?.name}</p>
                         <p className={`${styles.email}`}>{user?.email}</p>
 
                     </div>

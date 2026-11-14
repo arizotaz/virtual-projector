@@ -63,7 +63,7 @@ export default function Home() {
 
     content.push(
         <div className={styles.homeContent}>
-            <Navbar user={{}} />
+            <Navbar user={user} />
             <div className={styles.dashboardLayout}>
                 <aside className={styles.dashboardUserInfo}>
                     <h1>Your Info</h1>

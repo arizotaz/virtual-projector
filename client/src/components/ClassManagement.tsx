@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { Link } from "react-router-dom";
 import { AdminUser, STUDENT_ROLE_ID } from "@virtual-projector/shared";
 
 import { ActionResult, AdminRequest, FullName, useAction, useAdminData, useDebounced } from "../pages/admin/common";
 import { SectionPath } from "../pages/admin/classes";
 
-export default function ClassManagement({ crn, sectionid } : { crn: string, sectionid: string }) {
+import Modal from "./Modal";
+function ClassManagementPanel({ crn, sectionid } : { crn: string, sectionid: string }) {
     const path = SectionPath(crn, sectionid);
     const { data: roster, error: loadError, reload } = useAdminData<AdminUser[]>(`${path}/students`);
 
@@ -79,6 +80,22 @@ export default function ClassManagement({ crn, sectionid } : { crn: string, sect
                         {available.length === 0 && <tr><td colSpan={3}>No students to enroll</td></tr>}
                     </tbody>
                 </table>
+            )}
+        </>
+    );
+}
+
+export default function ClassManagement(props: { crn: string, sectionid: string }) {
+    const [open, setOpen] = useState(false);
+    const close = useCallback(() => setOpen(false), []);
+
+    return (
+        <>
+            <button onClick={() => { setOpen(true); console.log("BTN PRESSED!"); }}>Manage Students</button>
+            {open && (
+                <Modal title="Class Management" onClose={close}>
+                    <ClassManagementPanel {...props} />
+                </Modal>
             )}
         </>
     );

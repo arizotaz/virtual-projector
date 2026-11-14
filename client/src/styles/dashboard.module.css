@@ -1,0 +1,92 @@
+.homeContent {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+.dashboardLayout {
+    display: grid;
+    grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
+    align-items: stretch;
+    gap: 28px;
+    flex: 1;
+    min-height: 0;
+    /* max-width: 1200px; */
+    padding-right: 28px;
+    width: 100%;
+    margin: 0;
+}
+
+.dashboardUserInfo {
+    min-width: 0;
+    padding: 20px;
+    border: 1px solid var(--border-color);
+    background: var(--surface-color);
+    overflow-y: hidden;
+}
+
+.dashboardUserInfo dl {
+    grid-template-columns: minmax(0, 1fr) !important;
+}
+
+.dashboardUserInfo dl > div {
+    min-width: 0;
+}
+
+.dashboardClassList {
+    min-width: 0;
+}
+
+.toggleViewButtons {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.dashboardGridButton,
+.dashboardListButton {
+    padding: 6px 10px;
+}
+
+.dashboardGridButton:active,
+.dashboardListButton:active {
+    background-color: var(--muted-color);
+}
+
+.dashboardCards {
+    display: grid;
+    gap: 16px;
+    padding-left: 0;
+    list-style-type: none;
+}
+
+.dashboardCards.cardGrid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+}
+
+.dashboardCards.cardList {
+    grid-template-columns: 1fr;
+}
+
+.dashboardCards.cardList .itemCard {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.itemCard {
+    padding: 16px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background-color: var(--surface-color);
+}
+
+@media (max-width: 760px) {
+    .dashboardLayout {
+        grid-template-columns: 1fr;
+        min-height: auto;
+        gap: 20px;
+        padding: 20px 16px;
+        border-radius: 8px;
+    }
+}

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { STUDENT_ROLE_ID, TEACHER_ROLE_ID, type AdminClass, type AdminSection, type AdminUser, type ShorthandStatus } from "@virtual-projector/shared";
 import { ActionResult, AdminRequest, ClassAddress, FullName, useAction, useAdminData, useDebounced } from "./common";
-import styles from "./admin.module.css";
+import styles from "../../styles/admin.module.css";
 
 export let ClassPath = (crn: string) => `/classes/${encodeURIComponent(crn)}`;
 export let SectionPath = (crn: string, sectionid: string) => `${ClassPath(crn)}/sections/${encodeURIComponent(sectionid)}`;

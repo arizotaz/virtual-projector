@@ -3,7 +3,7 @@ import { Link, Navigate, Outlet } from "react-router-dom";
 import { ADMIN_ROLE_ID, type AdminStats, type AuthUser } from "@virtual-projector/shared";
 import { GetCurrentUser, GetHighRoleOfUser } from "../../utilities/user";
 import { ActionResult, useAdminData } from "./common";
-import styles from "./admin.module.css";
+import styles from "../../styles/admin.module.css";
 
 /** Wraps every /admin page. The server enforces permissions; this just shows the right page. */
 let AdminLayout = () => {

@@ -1,5 +1,5 @@
 import type { RelayStatus, RelayTree, RelayTreeNode } from "@virtual-projector/shared";
-import styles from "./relayTree.module.css";
+import styles from "../styles/relayTree.module.css";
 
 const STATUS_CLASS: Record<RelayStatus, string> = {
     connecting: styles.connecting,

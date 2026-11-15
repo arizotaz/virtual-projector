@@ -1,0 +1,51 @@
+/* Bare minimum until the styling pass */
+.admin {
+    min-height: 100vh;
+    box-sizing: border-box;
+    /* padding: 16px 24px; */
+    background: var(--surface-color);
+    font-family: system-ui, sans-serif;
+}
+
+.nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    padding: 12px;
+    background-color: var(--highlight-1);
+    border-bottom: 2px solid var(--highlight-3);
+    color: var(--border-color);
+}
+
+.admin table {
+    border-collapse: collapse;
+    margin: 8px 0;
+}
+
+.admin th,
+.admin td {
+    border: 1px solid var(--border-color);
+    padding: 4px 8px;
+    text-align: left;
+}
+
+.form {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: 8px;
+    margin: 8px 0;
+}
+
+.form label {
+    display: flex;
+    flex-direction: column;
+}
+
+.error {
+    color: var(--error-color);
+}
+
+.notice {
+    color: var(--notice-color);
+}

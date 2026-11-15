@@ -4,8 +4,9 @@ import { socket } from "../socket";
 import RelayTreeView, { TreeDepth } from "../components/relayTree";
 import { DEFAULT_ROOM, RelayNode, type RelayStatus } from "../webrtc/RelayNode";
 import { StreamDecoder } from "../webrtc/StreamDecoder";
-import styles from "./webrtc.module.css"
 import ClassManagement from "../components/ClassManagement";
+
+import styles from "../styles/webrtc.module.css"
 
 const EMPTY_TREE: RelayTree = { room: DEFAULT_ROOM, sourceId: null, nodes: [] };
 
@@ -95,6 +96,32 @@ let HostStream = ({ room, crn, sectionid }: { room: string, crn: string, section
         previous?.getTracks().forEach((t) => t.stop());
     }
 
+    /** @todo - Needs adjusted to write student information into the Blob */
+    const ExportAttendance = () => {
+        let data = "Lorem Ippsum!\n\n";
+
+        for (const node of tree.nodes) {
+            const readableJoinTime = new Date(node.joinedAt).toLocaleString("en-US", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit"
+            });
+
+            data += `${node.id} (${node.role}) - ${readableJoinTime}\n`;
+        }
+
+        const blob = new Blob([data], { type: "text/plain" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+
+        link.href = url;
+        link.download = `attendance-${room.replace(/\W+/g, "-")}-${new Date().toISOString().slice(0, 10)}.txt`;
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+    };
+
     useEffect(() => StopStream, []);
 
     return (
@@ -121,8 +148,11 @@ let HostStream = ({ room, crn, sectionid }: { room: string, crn: string, section
                 {/* connection listing (needs to show student emails associated with tree-node) */}
                 {tree.sourceId && (
                     <>
-                        <h3>Relay tree ({tree.nodes.length - 1} viewers)</h3>
-                        <RelayTreeView tree={tree} />
+                        <div style={{ "paddingLeft": "15px", "paddingBottom": "15px", }}>
+                            <h3>Relay tree ({tree.nodes.length - 1} viewers)</h3>
+                            <RelayTreeView tree={tree} />
+                            <button onClick={ExportAttendance} disabled={tree.nodes.length - 1 === 0}>Export attendance</button>
+                        </div>
                     </>
                 )}
             </div>
@@ -144,6 +174,23 @@ let ViewerStream = ({ room }: { room: string }) => {
     let [pictureSize, setPictureSize] = useState<{ width: number; height: number } | null>(null);
     let [pipReady, setPipReady] = useState(false);
     let [inPip, setInPip] = useState(false);
+
+    /** @todo - Test on mobile devices */
+    let SaveScreenshot = () => {
+        const canvas = canvasRef.current;
+        if (!canvas || !pictureSize) return;
+
+        canvas.toBlob((blob) => {
+            if (!blob) return;
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            // room is "crn/sectionid", so strip the slash
+            link.download = `${room.replace(/\W+/g, "-")}-${new Date().toISOString().replace(/[:.]/g, "-")}.png`;
+            link.click();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }, "image/png");
+    };
 
     useEffect(() => {
         // Every viewer is also a relay, it forwards what it receives to its own children.
@@ -213,6 +260,7 @@ let ViewerStream = ({ room }: { room: string }) => {
                     <div className={`${styles.player}`} style={playerStyle}>
                         <canvas ref={canvasRef} />
                         {message && <div className={`${styles.status}`}>{message}</div>}
+
                         <video
                             ref={pipVideoRef}
                             className={`${styles.pipVideo}`}
@@ -220,6 +268,11 @@ let ViewerStream = ({ room }: { room: string }) => {
                             playsInline
                             onLoadedMetadata={() => setPipReady(true)}
                         />
+
+                        <button className={`${styles.screenshotButton}`} onClick={SaveScreenshot} disabled={!pictureSize || status === "waiting"}>
+                            Screenshot
+                        </button>
+
                         {document.pictureInPictureEnabled && !inPip && (
                             <button className={`${styles.pipButton}`} onClick={TogglePip} disabled={!pipReady}>
                                 Picture-in-Picture

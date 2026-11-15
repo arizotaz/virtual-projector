@@ -1,7 +1,7 @@
 import { ReactNode, useEffect } from "react";
 import { createPortal } from "react-dom";
 
-import styles from "./modal.module.css";
+import styles from "../styles/modal.module.css";
 
 export default function Modal({ title, onClose, children }: { title: string, onClose: () => void, children: ReactNode }) {
     useEffect(() => {

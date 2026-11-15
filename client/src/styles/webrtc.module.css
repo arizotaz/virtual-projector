@@ -60,6 +60,11 @@
     bottom: 12px;
 }
 
+.screenshotButton {
+    position: absolute;
+    bottom: 12px;
+}
+
 .client .pipOverlay {
     position: absolute;
     inset: 0;

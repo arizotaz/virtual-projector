@@ -1,0 +1,130 @@
+@import url('https://fonts.googleapis.com/css2?family=Rethink+Sans:wght@400;500;600;700&display=swap');
+
+:root {
+    font-family: 'Rethink Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+
+    --background-color: #f3f6fa;
+    --surface-color: #ffffff;
+    --text-color: #262528;
+    --muted-color: #8395ad;
+    --highlight-1: #315d8a;
+    --highlight-2: #24486f;
+    --highlight-3: #c49a42;
+    --highlight-4: #f5ebd3;
+    --border-color: #dce4ed;
+    --error-color: #d33;
+    --notice-color: #00a52c;
+}
+
+html, body, #root, .rootContainer {
+    width: 100%;
+    height: 100%;
+}
+
+body {
+    margin: 0;
+    background: var(--background-color);
+    color: var(--text-color);
+    font-family: 'Rethink Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+body, button, input, textarea, select {
+    font-family: 'Rethink Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+a {
+    color: var(--highlight-1);
+    font-weight: 600;
+}
+
+a:hover {
+    color: var(--highlight-2);
+}
+
+.app-navbar {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    border-bottom: 2px solid var(--highlight-3);
+    background-color: var(--highlight-1);
+}
+
+.app-navbar a {
+    text-decoration: none;
+    color: var(--border-color);
+}
+
+.app-navbar a:hover {
+    color: var(--surface-color);
+}
+
+.app-navbar .nav-logo {
+    font-size: 1.3rem;
+}
+
+.app-navbar .nav-login {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+button, input, select, textarea {
+    color: var(--text-color);
+    font: inherit;
+}
+
+button {
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--surface-color);
+    cursor: pointer;
+}
+
+button:hover {
+    border-color: var(--highlight-1);
+}
+
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, a:focus-visible {
+    outline: 2px solid var(--highlight-3);
+    outline-offset: 2px;
+}
+
+input, select, textarea {
+    padding: 8px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--surface-color);
+}
+
+table {
+    border-collapse: collapse;
+    background: var(--surface-color);
+}
+
+th, td {
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    text-align: left;
+}
+
+th {
+    background: var(--highlight-4);
+}
+
+hr {
+    border: 0;
+    border-top: 1px solid var(--border-color);
+}

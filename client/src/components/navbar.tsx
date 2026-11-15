@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { GetBackendStr, UserData } from "../utilities/browser_utils";
 import { AuthUser } from "@virtual-projector/shared";
 
-import styles from "./navbar.module.css"
+import styles from "../styles/navbar.module.css"
 
 const ROLE_BADGE: Record<string, string> = {
     Administrator: "text-bg-danger",

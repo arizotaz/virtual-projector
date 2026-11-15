@@ -75,11 +75,6 @@ export default function StreamPanel() {
     return (
         <>
             <div className={`${styles.host}`}>
-                {status ? (
-                    <button onClick={StopStream}>Stop Stream</button>
-                ) : (
-                    <button onClick={StartStream}>Start Stream</button>
-                )}
                 <span> Room: {DEFAULT_ROOM} {status && `· ${STATUS_TEXT[status]}`}</span>
                 <video ref={previewRef} muted playsInline />
                 <br /><br />
@@ -88,6 +83,11 @@ export default function StreamPanel() {
                     <summary>Preview</summary>
                     <canvas ref={clientRefFakeCanvas} />
                 </details>
+                {status ? (
+                    <button onClick={StopStream}>Stop Stream</button>
+                ) : (
+                    <button onClick={StartStream}>Start Stream</button>
+                )}
 
                 <details>
                     <summary>Peer-Tree Sumamry</summary>

@@ -3,6 +3,8 @@ import StreamPanel from "./StreamPanel";
 import { GetBackendStr } from "../utilities/browser_utils";
 import Feedback from '../components/feedback';
 
+import styles from "../styles/classview.module.css";
+
 export type Class = {
     crn: string;
     name: string;

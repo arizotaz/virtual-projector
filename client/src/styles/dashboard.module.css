@@ -23,6 +23,7 @@
     border: 1px solid var(--border-color);
     background: var(--surface-color);
     overflow-y: hidden;
+    z-index: -2;
 }
 
 .dashboardUserInfo dl {
@@ -41,6 +42,17 @@
     display: flex;
     gap: 8px;
     margin-bottom: 12px;
+}
+
+.dashboardMain {
+    display: grid;
+    align-content: start;
+    gap: 24px;
+    min-width: 0;
+}
+
+.dashboardAdminPanel {
+    min-width: 0;
 }
 
 .dashboardGridButton,

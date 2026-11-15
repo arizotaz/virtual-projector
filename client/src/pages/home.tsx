@@ -57,10 +57,6 @@ export default function Home() {
 
     const content: ReactNode[] = [];
 
-    if (user.roles.some((r) => r.id >= ADMIN_ROLE_ID)) {
-        content.push(<a key="admin" href="/admin">Admin Panel</a>);
-    }
-
     content.push(
         <div className={styles.homeContent}>
             <Navbar user={user} />
@@ -77,20 +73,29 @@ export default function Home() {
                     </dl>
                 </aside>
 
-                <section className={styles.dashboardClassList}>
-                    <h2>Your Classes</h2>
-                    <div className={styles.toggleViewButtons}>
-                        <button type="button" className={styles.dashboardGridButton} onClick={() => setCardView("cardGrid")} aria-pressed={cardView === "cardGrid"}>Grid View</button>
-                        <button type="button" className={styles.dashboardListButton} onClick={() => setCardView("cardList")} aria-pressed={cardView === "cardList"}>List View</button>
-                    </div>
-                    <ul className={`${styles.dashboardCards} ${styles[cardView]}`}>
-                        {enrollments.map((c) => (
-                            <li key={`${c.department}/${c.shorthand}`} className={styles.itemCard}>
-                                <a href={`/c/${c.department}/${c.shorthand}`}>{c.name}</a>
-                            </li>
-                        ))}
-                    </ul>
-                </section>
+                <div className={styles.dashboardMain}>
+                    {/* Add admin panel */}
+                    {user.roles.some((r) => r.id >= ADMIN_ROLE_ID) && (<section className={styles.dashboardAdminPanel}>
+                        <h2>Admin Panel</h2>
+                        <a href="/admin"><button type="button">Admin Panel</button></a>
+                    </section>)}
+                    
+
+                    <section className={styles.dashboardClassList}>
+                        <h2>Your Classes</h2>
+                        <div className={styles.toggleViewButtons}>
+                            <button type="button" className={styles.dashboardGridButton} onClick={() => setCardView("cardGrid")} aria-pressed={cardView === "cardGrid"}>Grid View</button>
+                            <button type="button" className={styles.dashboardListButton} onClick={() => setCardView("cardList")} aria-pressed={cardView === "cardList"}>List View</button>
+                        </div>
+                        <ul className={`${styles.dashboardCards} ${styles[cardView]}`}>
+                            {enrollments.map((c) => (
+                                <li key={`${c.department}/${c.shorthand}`} className={styles.itemCard}>
+                                    <a href={`/c/${c.department}/${c.shorthand}`}>{c.name}</a>
+                                </li>
+                            ))}
+                        </ul>
+                    </section>
+                </div>
             </div>
         </div>,
     );

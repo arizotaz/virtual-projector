@@ -100,31 +100,35 @@ let HostStream = ({ room, crn, sectionid }: { room: string, crn: string, section
     return (
         <>
             <div className={`${styles.host}`}>
-                {/* stream controls */}
-                {status ? (
-                    <>
-                        <button onClick={ChangeScreen}>Change Screen</button>
-                        {" "}
-                        <button onClick={StopStream}>Stop Stream</button>
-                    </>
-                ) : (
-                    <button onClick={StartStream}>Start Stream</button>
-                )}
+                <section className={styles.hostSide1}>
+                    {/* stream view-port */}
+                    <h2 className={styles.panelHeading}> Room: {room} {status && `· ${STATUS_TEXT[status]}`}</h2>
+                    <video ref={previewRef} muted playsInline />
 
-                {/* stream view-port */}
-                <span> Room: {room} {status && `· ${STATUS_TEXT[status]}`}</span>
-                <video ref={previewRef} muted playsInline />
+                    {/* stream controls */}
+                    {status ? (
+                        <>
+                            <button onClick={ChangeScreen}>Change Screen</button>
+                            {" "}
+                            <button onClick={StopStream}>Stop Stream</button>
+                        </>
+                    ) : (
+                        <button onClick={StartStream}>Start Stream</button>
+                    )}
+                </section>
                 
-                {/* internal modal for class management (keeps stream uninterrupted) */}
-                <ClassManagement crn={crn} sectionid={sectionid} />
+                <section className={styles.hostSide2}>
+                    {/* internal modal for class management (keeps stream uninterrupted) */}
+                    <ClassManagement crn={crn} sectionid={sectionid} />
 
-                {/* connection listing (needs to show student emails associated with tree-node) */}
-                {tree.sourceId && (
-                    <>
-                        <h3>Relay tree ({tree.nodes.length - 1} viewers)</h3>
-                        <RelayTreeView tree={tree} />
-                    </>
-                )}
+                    {/* connection listing (needs to show student emails associated with tree-node) */}
+                    {tree.sourceId && (
+                        <>
+                            <h3>Relay tree ({tree.nodes.length - 1} viewers)</h3>
+                            <RelayTreeView tree={tree} />
+                        </>
+                    )}
+                </section>
             </div>
 
         </>

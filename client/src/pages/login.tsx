@@ -67,7 +67,7 @@ export default function Login() {
                     Virtual Projector
                 </h1>
 
-                <Feedback success={success} message={msg} />
+                {/* <Feedback success={success} message={msg} /> */}
 
                 <p style={{ color: "var(--muted-color)", marginBottom: 24 }}>
                     Sign in to your account

@@ -24,7 +24,7 @@ let AdminLayout = () => {
     }
 
     return (
-        <main className={styles.admin}>
+        <main>
             <nav className={styles.nav}>
                 <strong>Admin</strong>
                 <Link to="/admin">Overview</Link>
@@ -34,7 +34,9 @@ let AdminLayout = () => {
                 <Link to="/admin/classes">Classes</Link>
                 <span>Signed in as {user.name}</span>
             </nav>
-            <Outlet />
+            <div className={styles.adminContents}>
+                <Outlet />
+            </div>
         </main>
     );
 }

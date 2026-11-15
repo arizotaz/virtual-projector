@@ -2,9 +2,12 @@
 .admin {
     min-height: 100vh;
     box-sizing: border-box;
-    /* padding: 16px 24px; */
     background: var(--surface-color);
     font-family: system-ui, sans-serif;
+}
+
+.adminContents {
+    padding: 16px 24px;
 }
 
 .nav {
@@ -15,6 +18,15 @@
     background-color: var(--highlight-1);
     border-bottom: 2px solid var(--highlight-3);
     color: var(--border-color);
+}
+
+.nav a {
+    text-decoration: none;
+    color: var(--border-color);
+}
+
+.nav a:hover {
+    color: var(--surface-color);
 }
 
 .admin table {

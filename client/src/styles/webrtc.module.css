@@ -60,11 +60,6 @@
     bottom: 12px;
 }
 
-.screenshotButton {
-    position: absolute;
-    bottom: 12px;
-}
-
 .client .pipOverlay {
     position: absolute;
     inset: 0;
@@ -84,12 +79,66 @@
     margin: 0;
 }
 
+/* Teacher-view styling */
+
 .host video {
+    display: grid;
+    grid-template-columns: auto;
     width:100%;
     background-color: rgba(0,0,0);
+}
+
+.host {
+    display: grid;
+    grid-template-columns: minmax(0, 3fr) minmax(320px, 2fr);
+    gap: 24px;
+    align-items: start;
+    min-height: 100vh;
+    padding: 24px;
+    background: var(--background-color);
+    color: var(--text-color);
+}
+
+.hostSide1,
+.hostSide2 {
+    min-width: 0;
+    padding: 20px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--surface-color);
+}
+
+.hostSide1 video {
+    display: block;
+    width: 100%;
+    max-height: 60vh;
+    aspect-ratio: 16 / 9;
+    object-fit: contain;
+    background: var(--text-color);
+    border-radius: 8px;
+    margin-bottom: 4px;
+}
+
+.hostStreamControls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+@media (max-width: 760px) {
+    .host {
+        grid-template-columns: minmax(0, 1fr);
+        padding: 16px;
+    }
 }
 
 .debug {
     font-family: system-ui, sans-serif;
     padding: 24px;
+}
+
+.panelHeading {
+    margin: 0 0 12px;
+    padding: 0;
 }

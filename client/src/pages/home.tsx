@@ -1,10 +1,10 @@
-import { useEffect, useState, Fragment, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { ADMIN_ROLE_ID, type AuthUser } from "@virtual-projector/shared";
 import { socket } from "../socket";
 import Navbar from "../components/navbar";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { GetBackendStr } from "../utilities/browser_utils";
 import { GetCurrentUser, GetEnrollments } from "../utilities/user";
+import styles from "../styles/dashboard.module.css"
 
 export default function Home() {
     type EnrolledSection = { name: string; department: string; shorthand: string | null };
@@ -12,6 +12,7 @@ export default function Home() {
     const [loading, setLoading] = useState<boolean>(true);
     const [user, setUser] = useState<AuthUser | null>(null);
     const [enrollments, setEnrollments] = useState<EnrolledSection[]>([]);
+    const [cardView, setCardView] = useState<"cardGrid" | "cardList">("cardGrid");
 
     useEffect(() => {
         const controller = new AbortController();
@@ -56,45 +57,51 @@ export default function Home() {
 
     const content: ReactNode[] = [];
 
-    if (user.roles.some((r) => r.id >= ADMIN_ROLE_ID)) {
-        content.push(<a key="admin" href="/admin">Admin Panel</a>);
-    }
-
     content.push(
-        <Fragment key="classes">
-            <h1>Your Info</h1>
-            <dl style={{ display: "grid", gridTemplateColumns: "max-content 1fr", gap: "8px 16px", margin: 0 }}>
-                {details.map(([label, value]) => (
-                    <div key={label} style={{ display: "contents" }}>
-                        <dt style={{ fontWeight: 600 }}>{label}</dt>
-                        <dd style={{ margin: 0, overflowWrap: "anywhere" }}>{value}</dd>
-                    </div>
-                ))}
-            </dl>
-            <hr/>
+        <div className={styles.homeContent}>
+            <Navbar user={user} />
+            <div className={styles.dashboardLayout}>
+                <aside className={styles.dashboardUserInfo}>
+                    <h1>Your Info</h1>
+                    <dl style={{ display: "grid", gridTemplateColumns: "max-content 1fr", gap: "8px 16px", margin: 0 }}>
+                        {details.map(([label, value]) => (
+                            <div key={label}>
+                                <dt style={{ fontWeight: 600 }}>{label}</dt>
+                                <dd style={{ margin: 0, overflowWrap: "anywhere" }}>{value}</dd>
+                            </div>
+                        ))}
+                    </dl>
+                </aside>
 
-            <h2>Your Classes</h2>
-            <ul>
-                {enrollments.map((c) => (
-                    <li key={`${c.department}/${c.shorthand}`}>
-                        <a href={`/c/${c.department}/${c.shorthand}`}>{c.name}</a>
-                    </li>
-                ))}
-            </ul>
-        </Fragment>,
+                <div className={styles.dashboardMain}>
+                    {/* Add admin panel */}
+                    {user.roles.some((r) => r.id >= ADMIN_ROLE_ID) && (<section className={styles.dashboardAdminPanel}>
+                        <h2>Admin Panel</h2>
+                        <a href="/admin"><button type="button">Admin Panel</button></a>
+                    </section>)}
+                    
+
+                    <section className={styles.dashboardClassList}>
+                        <h2>Your Classes</h2>
+                        <div className={styles.toggleViewButtons}>
+                            <button type="button" className={styles.dashboardGridButton} onClick={() => setCardView("cardGrid")} aria-pressed={cardView === "cardGrid"}>Grid View</button>
+                            <button type="button" className={styles.dashboardListButton} onClick={() => setCardView("cardList")} aria-pressed={cardView === "cardList"}>List View</button>
+                        </div>
+                        <ul className={`${styles.dashboardCards} ${styles[cardView]}`}>
+                            {enrollments.map((c) => (
+                                <li key={`${c.department}/${c.shorthand}`} className={styles.itemCard}>
+                                    <a href={`/c/${c.department}/${c.shorthand}`}>{c.name}</a>
+                                </li>
+                            ))}
+                        </ul>
+                    </section>
+                </div>
+            </div>
+        </div>,
     );
 
     return (
-        <main
-            style={{
-                minHeight: "100vh",
-                boxSizing: "border-box",
-                background: "#f5f5f5",
-                color: "#111",
-                fontFamily: "system-ui, sans-serif",
-                padding: 24,
-            }}
-        >
+        <main className={styles.homePage}>
             {content}
         </main>
     );

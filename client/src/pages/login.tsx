@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { GetBackendStr } from "../utilities/browser_utils";
-import Feedback from '../components/feedback';
 
 export default function Login() {
     const navigate = useNavigate();

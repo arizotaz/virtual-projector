@@ -114,6 +114,8 @@ export interface RelayTreeNode {
   role: RelayRole;
   parentId: string | null;
   status: RelayStatus;
+  name: string;
+  email: string;
   joinedAt: number;
 }
 
@@ -145,7 +147,7 @@ export interface ClientToServerEvents {
   ping: () => void;
 
   "room:join": (
-    payload: { room: string; role: RelayRole },
+    payload: { room: string; role: RelayRole; name?: string; email?: string },
     ack: (result: JoinRoomResult) => void,
   ) => void;
   "room:leave": () => void;

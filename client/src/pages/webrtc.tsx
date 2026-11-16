@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
-import type { RelayTree } from "@virtual-projector/shared";
+import type { AuthUser, RelayTree } from "@virtual-projector/shared";
 import { socket } from "../socket";
 import RelayTreeView, { TreeDepth } from "../components/relayTree";
 import { DEFAULT_ROOM, RelayNode, type RelayStatus } from "../webrtc/RelayNode";
 import { StreamDecoder } from "../webrtc/StreamDecoder";
 import styles from "../styles/webrtc.module.css"
 import ClassManagement from "../components/ClassManagement";
+import { GetCurrentUser } from "../utilities/user";
 
 const EMPTY_TREE: RelayTree = { room: DEFAULT_ROOM, sourceId: null, nodes: [] };
 
@@ -97,9 +98,11 @@ let HostStream = ({ room, crn, sectionid }: { room: string, crn: string, section
 
     /** @todo - Needs adjusted to write student information into the Blob */
     const ExportAttendance = () => {
-        let data = "Lorem Ippsum!\n\n";
+        let data = "";
 
         for (const node of tree.nodes) {
+            if (node.role !== "viewer") continue;
+
             const readableJoinTime = new Date(node.joinedAt).toLocaleString("en-US", {
                 year: "numeric",
                 month: "long",
@@ -108,12 +111,13 @@ let HostStream = ({ room, crn, sectionid }: { room: string, crn: string, section
                 minute: "2-digit"
             });
 
-            data += `${node.id} (${node.role}) - ${readableJoinTime}\n`;
+            data += `${node.name || "Unknown"} <${node.email || "no email"}> - ${readableJoinTime}\n`;
         }
 
         const blob = new Blob([data], { type: "text/plain" });
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
+        link.hidden = true;
 
         link.href = url;
         link.download = `attendance-${room.replace(/\W+/g, "-")}-${new Date().toISOString().slice(0, 10)}.txt`;
@@ -166,6 +170,11 @@ let WebRTCHostPage = () => <HostStream room={DEFAULT_ROOM} crn={""} sectionid={"
 
 /** Watches a room's stream, and relays it on to this viewer's children */
 let ViewerStream = ({ room }: { room: string }) => {
+    const [user, setUser] = useState<AuthUser | null>(null);
+    // The node is only created once the user lookup has finished (found or not),
+    // so it joins the room once with the right name instead of "Unknown" first
+    const [userLoaded, setUserLoaded] = useState(false);
+
     let canvasRef = useRef<HTMLCanvasElement>(null);
     let pipVideoRef = useRef<HTMLVideoElement>(null);
     let hadStreamRef = useRef(false);
@@ -194,9 +203,32 @@ let ViewerStream = ({ room }: { room: string }) => {
     };
 
     useEffect(() => {
+        const controller = new AbortController();
+
+        let LoadUser = async () => {
+            try {
+                let usr = await GetCurrentUser(controller.signal);
+                if (!controller.signal.aborted) setUser(usr);
+            } catch {
+                // A failed lookup is treated as anonymous
+            } finally {
+                if (!controller.signal.aborted) setUserLoaded(true);
+            }
+        }
+        LoadUser();
+
+        return () => controller.abort();
+    }, []);
+
+    useEffect(() => {
+        if (!userLoaded) return;
+
         // Every viewer is also a relay, it forwards what it receives to its own children.
         // Forwarding never decodes, the decoder here is only so this viewer can watch.
         let node = new RelayNode(room, "viewer");
+        
+        node.SetUserInfo(user?.name ?? "", user?.email ?? "");
+
         let decoder = new StreamDecoder(canvasRef.current!);
         node.onStatus = (s, detail) => {
             if (s === "receiving") hadStreamRef.current = true;
@@ -235,7 +267,7 @@ let ViewerStream = ({ room }: { room: string }) => {
             pipVideo.removeEventListener("enterpictureinpicture", onEnterPip);
             pipVideo.removeEventListener("leavepictureinpicture", onLeavePip);
         };
-    }, [room]);
+    }, [userLoaded, user, room]);
 
     let TogglePip = async () => {
         try {

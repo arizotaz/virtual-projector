@@ -134,6 +134,13 @@ export class RelayNode {
     private room: string;
     private role: RelayRole;
 
+    private name: string;
+    private email: string;
+    public SetUserInfo(name: string, email: string) {
+        this.name  = name;
+        this.email = email;
+    }
+
     private parent: PeerLink | null = null;
     private parentChannel: RTCDataChannel | null = null;
     private children = new Map<string, ChildLink>();
@@ -150,6 +157,8 @@ export class RelayNode {
     constructor(room: string, role: RelayRole) {
         this.room = room;
         this.role = role;
+
+        this.name = this.email = "";
 
         // Each node gets its own socket so the host page can run its own
         // control connection alongside the fake client
@@ -213,10 +222,14 @@ export class RelayNode {
     }
 
     private Join = () => {
-        this.socket.emit("room:join", { room: this.room, role: this.role }, (res) => {
-            if (!res.ok) return this.SetStatus("error", res.error);
-            if (this.role === "source") this.SetStatus(this.encoder ? "live" : "waiting");
-        });
+        this.socket.emit(
+            "room:join",
+            { room: this.room, role: this.role, name: this.name, email: this.email },
+            (res) => {
+                if (!res.ok) return this.SetStatus("error", res.error);
+                if (this.role === "source") this.SetStatus(this.encoder ? "live" : "waiting");
+            },
+        );
     };
 
     // Socket dropped: everything is torn down; on reconnect we rejoin with a

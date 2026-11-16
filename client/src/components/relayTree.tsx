@@ -17,10 +17,15 @@ export default function RelayTreeView({ tree }: { tree: RelayTree }) {
 
     let Branch = ({ node }: { node: RelayTreeNode }) => {
         let children = childrenOf(node.id);
+
+        const node2str = ( node: RelayTreeNode ) => {
+            return `${node.name} (${node.email})`;
+        };
+
         return (
             <li>
                 <span className={`${styles.node} ${STATUS_CLASS[node.status]}`}>
-                    {node.role === "source" ? "Fake client (source)" : node.id}
+                    {node.role === "source" ? "You (source)" : node2str(node)}
                     <small> {node.status} · {children.length} children</small>
                 </span>
                 {children.length > 0 && (

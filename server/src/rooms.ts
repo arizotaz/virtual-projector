@@ -1,6 +1,7 @@
 import type { Server } from "socket.io";
 import {
     RELAY_MAX_CHILDREN,
+    RelayTreeNode,
     type ClientToServerEvents,
     type RelayRole,
     type RelaySignal,
@@ -17,8 +18,17 @@ interface TreeNode {
     parentId: string | null;
     children: string[];
     status: RelayStatus;
+    name: string;
+    email: string;
     joinedAt: number;
 }
+
+const MAX_NAME_LENGTH = 100;
+const MAX_EMAIL_LENGTH = 254;
+
+/** Client-supplied text: anything that isn't a string becomes "", the rest is trimmed and capped */
+const Clean = (value: unknown, max: number): string =>
+    typeof value === "string" ? value.trim().slice(0, max) : "";
 
 /** socket.io room that debug watchers of a relay room join */
 const WatchChannel = (room: string) => `watch:${room}`;
@@ -46,11 +56,18 @@ class Room {
         return this.nodes.size === 0;
     }
 
-    public Join(id: string, role: RelayRole): string | null {
+    public Join(id: string, role: RelayRole, name?: string, email?: string): string | null {
         if (this.nodes.has(id)) return "Already in this room";
         if (role === "source" && this.sourceId) return "Room already has a source";
 
-        this.nodes.set(id, { id, role, parentId: null, children: [], status: "connecting", joinedAt: Date.now() });
+        this.nodes.set(id, {
+            id, role, parentId: null, children: [],
+            status: "connecting",
+            // Only viewers are people to identify; the source is the host's fake client
+            name: role === "viewer" ? Clean(name, MAX_NAME_LENGTH) : "",
+            email: role === "viewer" ? Clean(email, MAX_EMAIL_LENGTH) : "",
+            joinedAt: Date.now(),
+        });
 
         if (role === "source") {
             this.sourceId = id;
@@ -104,9 +121,10 @@ class Room {
     }
 
     public GetTree(): RelayTree {
-        const nodes = [...this.nodes.values()].map(({ id, role, parentId, status, joinedAt }) => ({
-            id, role, parentId, status, joinedAt,
-        }));
+        const nodes = [...this.nodes.values()]
+            .map(({ id, role, parentId, status, name, email, joinedAt }) => ({
+                id, role, parentId, status, name, email, joinedAt,
+            }));
         return { room: this.name, sourceId: this.sourceId, nodes };
     }
 
@@ -184,7 +202,7 @@ class RoomManager {
         this.io = io;
     }
 
-    public Join(socketID: string, roomName: string, role: RelayRole): string | null {
+    public Join(socketID: string, roomName: string, role: RelayRole, name?: string, email?: string): string | null {
         this.Leave(socketID);
 
         let room = this.rooms.get(roomName);
@@ -193,7 +211,7 @@ class RoomManager {
             this.rooms.set(roomName, room);
         }
 
-        const error = room.Join(socketID, role);
+        const error = room.Join(socketID, role, name, email);
         if (error) {
             if (room.IsEmpty()) this.rooms.delete(roomName);
             return error;

@@ -51,7 +51,8 @@ io.on("connection", (socket) => {
       return ack({ ok: false, error: "Invalid role" });
     }
 
-    const error = rooms.Join(socket.id, room, role);
+    // Clean() in rooms.ts handles non-string values, so passing them straight through is safe
+    const error = rooms.Join(socket.id, room, role, payload.name, payload.email);
     ack(error ? { ok: false, error } : { ok: true, nodeId: socket.id });
   });
 

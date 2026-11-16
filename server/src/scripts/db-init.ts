@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 import mariadb from "mariadb";
 
 // In order: each file builds on the ones before it
-const SQL_FILES = ["schema.sql", "auth.sql", "classes.sql", "admin.sql"];
+const SQL_FILES = ["schema.sql", "auth.sql", "classes.sql", "admin.sql", "teacher.sql"];
 const SQL_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../db");
 
 const SUPER_ROLE_ID = 4;

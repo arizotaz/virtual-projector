@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
 import type { NextFunction, Request, Response } from "express";
-import { ADMIN_ROLE_ID, type AuthUser } from "@virtual-projector/shared";
+import { ADMIN_ROLE_ID, TEACHER_ROLE_ID, type AuthUser } from "@virtual-projector/shared";
 import { CallProcedure } from "./db";
 import { HashPassword, VerifyPassword } from "./passwords";
 
@@ -118,5 +118,11 @@ export async function RequireSession(req: Request, res: Response, next: NextFunc
 export function RequireAdmin(_req: Request, res: Response, next: NextFunction) {
   const session: ActiveSession = res.locals.session;
   if (session.user.roles.some((role) => role.id >= ADMIN_ROLE_ID)) return next();
+  res.status(403).json({ ok: false, error: "Permission denied" });
+}
+
+export function RequireTeacher(_req: Request, res: Response, next: NextFunction) {
+  const session: ActiveSession = res.locals.session;
+  if (session.user.roles.some((role) => role.id >= TEACHER_ROLE_ID)) return next();
   res.status(403).json({ ok: false, error: "Permission denied" });
 }

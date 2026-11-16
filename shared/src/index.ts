@@ -39,6 +39,15 @@ export interface AdminUser {
   has_account: boolean;
   roles: Role[];
 }
+export interface TeacherUser {
+  id: string;
+  first_name: string;
+  middle_initial: string | null;
+  last_name: string | null;
+  email: string;
+  has_account: boolean;
+  roles: Role[];
+}
 
 export interface AdminClass {
   crn: string;

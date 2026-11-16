@@ -10,7 +10,10 @@ import {
   SESSION_LIFETIME_SECONDS,
   type ActiveSession,
 } from "./auth";
+
 import adminRouter from "./admin";
+import teacherRouter from "./teacher";
+
 import { CallProcedure, pool, ProcedureError } from "./db";
 import { ADMIN_ROLE_ID, STUDENT_ROLE_ID, TEACHER_ROLE_ID, type ClassInfo } from "@virtual-projector/shared";
 
@@ -121,7 +124,7 @@ async function GetEnrollments(session: ActiveSession | null) {
 
     const level = Math.max(0, ...(session?.user.roles.map((role) => role.id) ?? []));
 
-    let rows = [];
+    let rows: EnrolledSection[] = [];
     if (isStudent) {
         rows = await pool.query<EnrolledSection[]>(
             `SELECT c.name, s.department, s.shorthand
@@ -154,6 +157,7 @@ router.get("/my-classes", async (req, res) => {
 });
 
 router.use("/admin", adminRouter);
+router.use("/teacher", teacherRouter);
 
 // Malformed requests keep their status; anything else is logged here and not sent to the client
 router.use((err: Error & { status?: number }, _req: Request, res: Response, _next: NextFunction) => {

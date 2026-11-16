@@ -2,17 +2,17 @@ import { useCallback, useState } from "react";
 import { Link } from "react-router-dom";
 import { AdminUser, STUDENT_ROLE_ID } from "@virtual-projector/shared";
 
-import { ActionResult, AdminRequest, FullName, useAction, useAdminData, useDebounced } from "../pages/admin/common";
+import { ActionResult, TeacherRequest, FullName, useAction, useTeacherData, useDebounced } from "../pages/teacher/common";
 import { SectionPath } from "../pages/admin/classes";
 
 import Modal from "./Modal";
 function ClassManagementPanel({ crn, sectionid } : { crn: string, sectionid: string }) {
     const path = SectionPath(crn, sectionid);
-    const { data: roster, error: loadError, reload } = useAdminData<AdminUser[]>(`${path}/students`);
+    const { data: roster, error: loadError, reload } = useTeacherData<AdminUser[]>(`${path}/students`);
 
     const [search, setSearch] = useState("");
     const query = useDebounced(search);
-    const { data: students } = useAdminData<AdminUser[]>(`/users?role=${STUDENT_ROLE_ID}&search=${encodeURIComponent(query)}`);
+    const { data: students } = useTeacherData<AdminUser[]>(`/users?role=${STUDENT_ROLE_ID}&search=${encodeURIComponent(query)}`);
 
     const { run, error } = useAction();
 
@@ -39,7 +39,7 @@ function ClassManagementPanel({ crn, sectionid } : { crn: string, sectionid: str
                                 <td><Link to={`/admin/student/${student.id}`}>{FullName(student)}</Link></td>
                                 <td>{student.email}</td>
                                 <td>
-                                    <button onClick={() => change(() => AdminRequest(`${path}/students/${student.id}`, "DELETE"))}>
+                                    <button onClick={() => change(() => TeacherRequest(`${path}/students/${student.id}`, "DELETE"))}>
                                         Remove
                                     </button>
                                 </td>
@@ -71,7 +71,7 @@ function ClassManagementPanel({ crn, sectionid } : { crn: string, sectionid: str
                                 <td>{FullName(student)}</td>
                                 <td>{student.email}</td>
                                 <td>
-                                    <button onClick={() => change(() => AdminRequest(`${path}/students`, "POST", { student_id: student.id }))}>
+                                    <button onClick={() => change(() => TeacherRequest(`${path}/students`, "POST", { student_id: student.id }))}>
                                         Enroll
                                     </button>
                                 </td>

@@ -6,9 +6,18 @@ COPY shared/ shared/
 COPY client/ client/
 COPY server/ server/
 
-RUN npm ci && npm run build
+# try to catch if the build failed,
+# prevent bad code from showing as a successful compose
+RUN npm ci \
+    && npm run typecheck \
+    && npm run build \
+    && test -n "$(ls -A server/dist)" \
+    && test -n "$(ls -A client/dist)"
 
 FROM nginx:latest
+
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
 RUN apt-get update && apt-get install -y --no-install-recommends \
         supervisor \
         net-tools \
@@ -32,6 +41,9 @@ COPY --from=build /app/client/dist /app/frontend
 
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY site.conf /etc/nginx/conf.d/default.conf
+
+# ensure nginx config is valid
+RUN nginx -t
 
 EXPOSE 80
 CMD ["/usr/bin/supervisord", "-n", "-c", "/etc/supervisor/conf.d/supervisord.conf"]

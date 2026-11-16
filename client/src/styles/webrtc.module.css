@@ -55,7 +55,13 @@
 }
 
 .client .pipButton {
+    background-color: var(--surface-color);
+}
+
+.client .pipControls {
     position: absolute;
+    display: flex;
+    gap: 8px;
     right: 12px;
     bottom: 12px;
 }
